@@ -1,24 +1,31 @@
 # TODO: OEF Climate Action Tracker
 
-Start Time: Saturday, May 16, 2026, 11:15 AM UTC-3
+Session started: Saturday, May 16, 2026, 11:15 AM UTC-3
 
-Time checkpoints:
-
-- 2-hour mark: Saturday, May 16, 2026, 1:15 PM UTC-3
-- 3.5-hour mark: Saturday, May 16, 2026, 2:45 PM UTC-3
-- 4-hour wrap point from assessment: Saturday, May 16, 2026, 3:15 PM UTC-3
-
-If this session is still active at those times, remind the operator to scope down, verify, and prepare the deliverables.
+Record sprint start and completion times here after each phase is done—not as predictions upfront.
 
 ## Sprint 1: Initial Setup & Design System
 
 Target duration: 30 minutes
+Status: Complete
 
-- [ ] Create the Next.js + TypeScript app in the repository root.
-- [ ] Add Open Earth design tokens from `docs/DESIGN_SYSTEM.md`.
-- [ ] Add public viewer and admin routes.
-- [ ] Add Greenville sample data as an initial fixture.
-- [ ] Confirm no generic shadcn defaults remain in first-pass UI.
+Phase 0 (planning/docs):
+
+- Started: Saturday, May 16, 2026, 11:15 AM UTC-3
+- Completed: Saturday, May 16, 2026, ~11:50 AM UTC-3 (approximately 30-40 minutes)
+- Paused before implementation (break).
+
+Phase 1 (implementation):
+
+- Started: Saturday, May 16, 2026, ~3:23 PM UTC-3
+- Completed: Saturday, May 16, 2026, ~3:55 PM UTC-3
+- Elapsed: approximately 32 minutes
+
+- [x] Create the Next.js + TypeScript app in the repository root.
+- [x] Add Open Earth design tokens from `docs/DESIGN_SYSTEM.md`.
+- [x] Add public viewer and admin routes.
+- [x] Add Greenville sample data as an initial fixture.
+- [x] Confirm no generic shadcn defaults remain in first-pass UI.
 
 Definition of done:
 
@@ -102,3 +109,4 @@ Definition of done:
 - [ ] PostgreSQL persistence fully wired into app routes/server actions.
 - [ ] Multiple city management.
 - [ ] Admin authentication with OAuth/JWT-compatible architecture.
+
