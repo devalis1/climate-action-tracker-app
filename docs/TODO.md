@@ -41,8 +41,9 @@ Status: Complete — operator verified (Docker, migrations, `db:check`, build).
 
 Phase 2 (implementation):
 
-- Started: Saturday, May 16, 2026 (agent session — Sprint 2)
-- Completed: Saturday, May 16, 2026 (operator verification — manual checklist passed)
+- Started: Saturday, May 16, 2026, ~4:25 PM UTC-3
+- Completed: Saturday, May 16, 2026, ~4:48 PM UTC-3
+- Elapsed: approximately 23 minutes
 
 - [x] Create PostgreSQL migration under `migrations/`.
 - [x] Model `cities` and `climate_actions`.
@@ -55,8 +56,6 @@ Definition of done:
 
 - Schema supports the required City Admin and Public Viewer flows.
 - Sorting/filtering design is documented in migration or adjacent source comments.
-
-Operator confirmation recorded: Postgres via Compose, migrations applied, `npm run db:check` OK, `npm run build` OK, `/` + `/admin` smoke OK.
 
 ## Sprint 3: Local-First LLM Service
 

@@ -89,4 +89,6 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Phase 1 / Sprint 1 completed Saturday, May 16, 2026, ~3:55 PM UTC-3 (operator sign-off after corrections and re-verification).
 - Operator planning/docs time before implementation was approximately 30-40 minutes.
 - Phase 1 elapsed from implementation start to operator sign-off: approximately 32 minutes.
-- Phase 2 / Sprint 2: operator verification recorded **Saturday, May 16, 2026** (manual checklist — Docker, migrate, `db:check`, `npm run build`, UI smoke).
+- Sprint 2 implementation started around Saturday, May 16, 2026, ~4:25 PM UTC-3.
+- Phase 2 / Sprint 2 completed Saturday, May 16, 2026, ~4:48 PM UTC-3 (operator sign-off after checklist).
+- Phase 2 elapsed from implementation start to operator sign-off: approximately 23 minutes.

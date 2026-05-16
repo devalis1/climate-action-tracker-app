@@ -22,6 +22,7 @@
   - any operator-owned actions.
 - Keep `docs/TODO.md` aligned when sprint scope changes.
 - Keep `docs/status/current.md` updated after milestones that change what is real vs planned.
+- **Sprint time tracking (required format):** Match Phase 1 everywhere. In `docs/TODO.md` use only a `Phase N (implementation):` block with three bullets: `Started`, `Completed`, `Elapsed` — no provenance, transcripts, or `stat` dumps. In `docs/PROGRESS.md` → `## Timing`, use the same three-line pattern as Sprint 1 (“Sprint N implementation started…”, “Phase N / Sprint N completed… (operator sign-off… )”, “Phase N elapsed…”). Add long audit detail only if the operator explicitly asks.
 
 ## Architectural Constraint
 
