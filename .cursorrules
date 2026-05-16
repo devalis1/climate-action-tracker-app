@@ -1,0 +1,60 @@
+# Cursor Rules: Climate Action Tracker
+
+## Source Of Truth
+
+- Treat `docs/OEF AI-Native Software Engineer Exercise.pdf` as the assessment source of truth.
+- Use `docs/assessment-notes.md`, `docs/DEVELOPER_PROFILE.md`, `docs/DESIGN_SYSTEM.md`, `docs/PROJECT_STRUCTURE.md`, `docs/TODO.md`, and `docs/PROGRESS.md` as active project context.
+- Build a web app, not mobile: Next.js, React, TypeScript, PostgreSQL, and a local-first Ollama LLM service with optional Gemini fallback.
+
+## Visual Constraint
+
+- All UI must follow the Open Earth / CityCatalyst aesthetic documented in `docs/DESIGN_SYSTEM.md`.
+- Use dark planetary backgrounds, royal blue fields, neon spring-green accents, circular image motifs, contour/topographic texture, Archia-style headings, DM Sans-style body copy, and monospace data labels.
+- Do not generate generic shadcn defaults, default gray SaaS screens, or unbranded light-only layouts.
+
+## Operational Constraint
+
+- Act as an AI Native Agent.
+- After every significant task, update `docs/PROGRESS.md` with:
+  - what changed,
+  - what was verified,
+  - what is next,
+  - any operator-owned actions.
+- Keep `docs/TODO.md` aligned when sprint scope changes.
+- Keep `docs/status/current.md` updated after milestones that change what is real vs planned.
+
+## Architectural Constraint
+
+- Core product: City Admin CRUD/import and Public Viewer dashboard for climate actions.
+- Model climate actions with typed contracts and validation schemas before wiring UI.
+- PostgreSQL is the persistence target. Prefer clear migrations under `migrations/` once implementation starts.
+- Climate action sorting/filtering must be written so it can scale to millions of rows:
+  - use database-level sorting and pagination for large sets,
+  - add indexes for common filters (`city_id`, `sector`, `status`, `start_year`),
+  - document partitioning strategy in migration comments or adjacent code comments for very large action/event tables,
+  - avoid loading entire large datasets into browser memory.
+- Unit-test pure calculations and schema parsing. Integration-test database and LLM boundaries where feasible.
+- For admin auth, prefer a design compatible with OAuth/JWT even if the timed exercise only implements a lightweight guard.
+
+## LLM Constraint
+
+- Implement free-text import as local-first:
+  - Ollama first,
+  - structured JSON output,
+  - schema validation,
+  - bounded repair retry,
+  - optional Gemini fallback when explicitly enabled.
+- Keep model secrets server-only. Do not expose LLM keys to the browser.
+
+## Safety Constraint
+
+- You are strictly forbidden from executing `git commit` or `git push`.
+- Do not amend, reset, force-push, or rewrite Git history.
+- Do not stage or commit secrets, `.env.local`, generated build output, or transient logs.
+
+## Agent Workflow
+
+- If a prompt is complex, first output a **Plan of Action** and wait for the user's `Go` before writing code.
+- A prompt is complex if it touches multiple systems, changes schema, implements a feature, changes auth/LLM behavior, or has architectural tradeoffs.
+- Documentation-only updates and small housekeeping edits may proceed when explicitly requested.
+- Prefer small, reviewable changes and explain assumptions when the assessment or notes leave room for judgment.
