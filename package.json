@@ -6,19 +6,25 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:migrate": "node scripts/run-migrations.mjs",
+    "db:check": "node scripts/db-check.mjs"
   },
   "dependencies": {
     "next": "latest",
+    "pg": "^8.16.0",
     "react": "latest",
     "react-dom": "latest",
+    "server-only": "^0.0.1",
     "zod": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "@types/pg": "^8.15.5",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "dotenv": "^16.5.0",
     "autoprefixer": "latest",
     "postcss": "latest",
     "tailwindcss": "latest",

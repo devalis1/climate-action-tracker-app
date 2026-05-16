@@ -4,7 +4,23 @@ Start Time: Saturday, May 16, 2026, 11:15 AM UTC-3
 
 ## Current State
 
-Phase 1 / Sprint 1 is complete. The repository now has a focused Next.js App Router shell at the root with Open Earth / CityCatalyst design tokens, Greenville sample data, a public viewer dashboard, and a read-only admin workspace.
+**Phase 1 (Sprint 1) and Phase 2 (Sprint 2) are complete and operator-verified.**
+
+The repository has the Next.js shell with Open Earth tokens, Greenville fixtures on `/` and `/admin`, and a **PostgreSQL layer** via Docker Compose, SQL migrations (`cities`, `climate_actions`), Greenville seed, `src/server/db.ts`, `src/lib/sorting.ts`, and README workflow. **`/` and `/admin` remain fixture-backed** until a later sprint reads from Postgres.
+
+## Alignment with assessment (PDF / notes) through Phase 2
+
+The runnable code and schema are checked against **`docs/assessment-notes.md`** (summary of **`docs/OEF AI-Native Software Engineer Exercise.pdf`**, the authoritative brief).
+
+| PDF / assessment expectation | Repo state through Phase 2 |
+| ---------------------------- | ---------------------------- |
+| **City**: name; baseline emissions (tons/year); target (net-zero) year | `cities`: `name`, `baseline_emissions_tons_per_year`, `target_year`; Zod `cityProfileSchema`; Greenville **500 000**, **2035** in fixture + seed |
+| **Climate action**: title; sector (`transport`, `energy`, `buildings`, `waste`, `land use`); estimated annual tons/year; status (`planned`, `in progress`, `completed`); start year | `climate_actions` CHECKs mirror `src/lib/schemas.ts`; column `annual_reduction_tons_per_year` ↔ Zod `annualReduction` |
+| **Greenville sample**: city + actions as in PDF | **`migrations/002_seed_greenville.sql`** matches **`src/lib/sample-data.ts`** (six actions, same titles/sectors/reductions/statuses/years) |
+| Stack: Next.js, React, TypeScript, **PostgreSQL** | Present; Postgres local path is Docker Compose + `DATABASE_URL` |
+| **Out of scope for Phase 2** per phased plan | LLM import, CRUD wired to DB, auth, charts, Vitest — not implemented yet (correct) |
+
+Scalability groundwork in place: indexing + partitioning commentary in **`migrations/001_initial_schema.sql`**; sort helpers in **`src/lib/sorting.ts`**.
 
 ## Done
 
@@ -29,6 +45,16 @@ Phase 1 / Sprint 1 is complete. The repository now has a focused Next.js App Rou
 - Added `README.md` with prerequisites, install/dev commands, and local URLs.
 - Updated `docs/TODO.md` to mark Sprint 1 setup/design-system items complete.
 - Added `"type": "module"` to `package.json` so Tailwind/Next TypeScript config files parse as ESM without Node warnings.
+- **Sprint 2**: Added `docker-compose.yml` with named volume `postgres_data`, published port `5432`, dev-safe Postgres credentials via env defaults, and `pg_isready` healthcheck.
+- **Sprint 2**: Added `migrations/001_initial_schema.sql` (`cities`, `climate_actions`) with CHECK constraints aligned to `src/lib/schemas.ts`, btree indexes on `city_id`, `sector`, `status`, `start_year`, and scaling/partitioning commentary for million-row workloads.
+- **Sprint 2**: Added `migrations/002_seed_greenville.sql` seeding Greenville + six actions matching `src/lib/sample-data.ts`.
+- **Sprint 2**: Added `scripts/run-migrations.mjs` (`npm run db:migrate`) applying ordered `*.sql` once each via `schema_migrations`; loads `.env.local` / `.env` through `dotenv`.
+- **Sprint 2**: Added `scripts/db-check.mjs` (`npm run db:check`) for Greenville row-count verification.
+- **Sprint 2**: Added `src/server/db.ts` (server-only pool, typed reads, offset listing + keyset helper for default `start_year` ordering) plus brief scaling pointers mirroring migrations.
+- **Sprint 2**: Added `src/lib/sorting.ts` whitelist helpers mapping UI sort keys → SQL `ORDER BY` clauses for later dashboard wiring.
+- **Sprint 2**: Declared `serverExternalPackages: ["pg"]` in `next.config.ts`.
+- **Sprint 2**: Dependencies `pg`, `server-only`; devDependencies `@types/pg`, `dotenv`.
+- **Sprint 2**: `.env.example`-documents `DATABASE_URL` and Compose-related vars (development placeholders only).
 
 ## Verified
 
@@ -44,17 +70,17 @@ Phase 1 / Sprint 1 is complete. The repository now has a focused Next.js App Rou
 - `npm install` completed successfully.
 - `npm run dev` started successfully.
 - Route smoke checks returned `200` for `/` and `/admin` after the Tailwind correction.
+- **Sprint 2 (agent + operator)**: `npm run build` succeeds with current dependencies; **operator completed** the manual checklist (Docker Compose, `npm run db:migrate`, `npm run db:check`, build, route smoke). **Agent re-ran `npm run build` after doc updates — exit code 0** (Next.js 16.2.6).
+- **Phase 2 vs PDF (via `docs/assessment-notes.md`)**: city and action field sets, enum values, and Greenville numbers match fixture + SQL seed; phased deferrals (LLM, full CRUD to DB, etc.) match the sprint plan.
 
 ## Next
 
-- Sprint 2: add PostgreSQL migrations for `cities` and `climate_actions`.
-- Add sector/status constraints or enums, indexes for `city_id`, `sector`, `status`, and `start_year`, and document the scaling/partitioning strategy.
-- Add Greenville seed data at the database layer once persistence begins.
+- Sprint 3: local-first LLM orchestration (`src/server/llm.ts`), structured import parsing, bounded repair retry, optional Gemini fallback behind explicit env flags.
 
 ## Operator-Owned Actions
 
-- Review the Sprint 1 UI and docs updates.
-- Commit and push manually when ready; agents must not run `git commit` or `git push`.
+- Run any additional **tests** you want before pushing.
+- **Commit and push manually** when ready; agents must not run `git commit` or `git push`.
 - Handle all commits and pushes manually.
 
 ## Timing
@@ -63,3 +89,4 @@ Phase 1 / Sprint 1 is complete. The repository now has a focused Next.js App Rou
 - Phase 1 / Sprint 1 completed Saturday, May 16, 2026, ~3:55 PM UTC-3 (operator sign-off after corrections and re-verification).
 - Operator planning/docs time before implementation was approximately 30-40 minutes.
 - Phase 1 elapsed from implementation start to operator sign-off: approximately 32 minutes.
+- Phase 2 / Sprint 2: operator verification recorded **Saturday, May 16, 2026** (manual checklist — Docker, migrate, `db:check`, `npm run build`, UI smoke).

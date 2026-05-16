@@ -37,17 +37,26 @@ Definition of done:
 
 Target duration: 30 minutes
 
-- [ ] Create PostgreSQL migration under `migrations/`.
-- [ ] Model `cities` and `climate_actions`.
-- [ ] Add sector/status constraints or enums.
-- [ ] Add indexes for `city_id`, `sector`, `status`, and `start_year`.
-- [ ] Add comments explaining scaling strategy for millions of action records: indexed filtering, database sorting, cursor pagination, and optional partitioning by `city_id` or `start_year`.
-- [ ] Add Greenville seed data.
+Status: Complete — operator verified (Docker, migrations, `db:check`, build).
+
+Phase 2 (implementation):
+
+- Started: Saturday, May 16, 2026 (agent session — Sprint 2)
+- Completed: Saturday, May 16, 2026 (operator verification — manual checklist passed)
+
+- [x] Create PostgreSQL migration under `migrations/`.
+- [x] Model `cities` and `climate_actions`.
+- [x] Add sector/status constraints or enums.
+- [x] Add indexes for `city_id`, `sector`, `status`, and `start_year`.
+- [x] Add comments explaining scaling strategy for millions of action records: indexed filtering, database sorting, cursor pagination, and optional partitioning by `city_id` or `start_year`.
+- [x] Add Greenville seed data.
 
 Definition of done:
 
 - Schema supports the required City Admin and Public Viewer flows.
 - Sorting/filtering design is documented in migration or adjacent source comments.
+
+Operator confirmation recorded: Postgres via Compose, migrations applied, `npm run db:check` OK, `npm run build` OK, `/` + `/admin` smoke OK.
 
 ## Sprint 3: Local-First LLM Service
 

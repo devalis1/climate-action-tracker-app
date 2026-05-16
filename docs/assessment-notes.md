@@ -37,7 +37,7 @@ Core action fields:
 - Ability to manage multiple cities if time allows.
 - Lightweight admin authentication if time allows.
 
-## Interview Topics To Demonstrate Where Reasonable
+## Production engineering depth (where reasonable)
 
 - Unit tests vs. integration tests.
 - Sorting and filtering climate action data.
