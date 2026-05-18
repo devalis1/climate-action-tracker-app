@@ -246,3 +246,123 @@ export async function listClimateActionsForCityKeyset(
     return result.rows.map(mapClimateAction);
   });
 }
+
+/** Update baseline inventory (tons/year) and net-zero target year for `cities.id`. */
+export async function updateCityBaselineAndTarget(
+  cityId: number,
+  input: {
+    baselineEmissionsTonsPerYear: number;
+    targetYear: number;
+  },
+): Promise<CityRecord | null> {
+  const baseline = BigInt(Math.floor(input.baselineEmissionsTonsPerYear));
+  const targetYear = Math.floor(input.targetYear);
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `UPDATE cities
+       SET baseline_emissions_tons_per_year = $2,
+           target_year = $3,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, name, baseline_emissions_tons_per_year, target_year,
+                 created_at, updated_at`,
+      [cityId, baseline, targetYear],
+    );
+    const row = result.rows[0];
+    return row ? mapCity(row) : null;
+  });
+}
+
+export async function insertClimateAction(input: {
+  cityId: number;
+  title: string;
+  sector: Sector;
+  annualReductionTonsPerYear: number;
+  status: Status;
+  startYear: number;
+}): Promise<ClimateActionRecord> {
+  const reduction = BigInt(Math.floor(input.annualReductionTonsPerYear));
+  const startYear = Math.floor(input.startYear);
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `INSERT INTO climate_actions (
+         city_id, title, sector, annual_reduction_tons_per_year, status, start_year
+       )
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, city_id, title, sector, annual_reduction_tons_per_year,
+                 status, start_year, created_at, updated_at`,
+      [
+        input.cityId,
+        input.title.trim(),
+        input.sector,
+        reduction,
+        input.status,
+        startYear,
+      ],
+    );
+    return mapClimateAction(result.rows[0]);
+  });
+}
+
+export async function updateClimateAction(input: {
+  id: number;
+  cityId: number;
+  title: string;
+  sector: Sector;
+  annualReductionTonsPerYear: number;
+  status: Status;
+  startYear: number;
+}): Promise<ClimateActionRecord | null> {
+  const reduction = BigInt(Math.floor(input.annualReductionTonsPerYear));
+  const startYear = Math.floor(input.startYear);
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `UPDATE climate_actions
+       SET title = $3,
+           sector = $4,
+           annual_reduction_tons_per_year = $5,
+           status = $6,
+           start_year = $7,
+           updated_at = NOW()
+       WHERE id = $1 AND city_id = $2
+       RETURNING id, city_id, title, sector, annual_reduction_tons_per_year,
+                 status, start_year, created_at, updated_at`,
+      [
+        input.id,
+        input.cityId,
+        input.title.trim(),
+        input.sector,
+        reduction,
+        input.status,
+        startYear,
+      ],
+    );
+    const row = result.rows[0];
+    return row ? mapClimateAction(row) : null;
+  });
+}
+
+export async function deleteClimateAction(input: {
+  id: number;
+  cityId: number;
+}): Promise<boolean> {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `DELETE FROM climate_actions WHERE id = $1 AND city_id = $2`,
+      [input.id, input.cityId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  });
+}
+
+/** Optional extension point — verify admin session/JWT/OAuth claims before mutations. */
+export function assertDemoAdminWritesAllowed(): void {
+  /*
+   * TODO(Sprint 5+): Gate writes behind real auth (sessions, JWT, OAuth) — not enforced in Sprint 4
+   * so reviewers can demo CRUD/import without onboarding into an IdP during the timed exercise.
+   */
+  void 0;
+}

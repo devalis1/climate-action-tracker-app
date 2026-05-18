@@ -1,6 +1,6 @@
 # City Climate Action Tracker
 
-Phase 2 adds **PostgreSQL in Docker**, SQL migrations under `migrations/`, a server-only DB module at `src/server/db.ts`, and Greenville seed data matching `src/lib/sample-data.ts`. The **Next.js UI at `/` and `/admin` still reads in-memory fixtures** until a later sprint wires routes to the database.
+PostgreSQL-backed City Admin CRUD (`/admin`), public Greenville dashboard (`/`), and Sprint 3 `POST /api/import-action` for **review-before-save** ingestion. Fixtures in `src/lib/sample-data.ts` remain for parity checks against the seeded SQL baseline but **`/` and `/admin` prefer live database rows.**
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ docker compose down -v
 | `npm run dev` on your machine | `localhost` |
 | Future Compose service next to DB | `postgres` (Compose service name) |
 
-## Application (unchanged from Phase 1)
+## Application
 
 ```bash
 npm run dev
@@ -77,8 +77,10 @@ npm run dev
 
 Open:
 
-- Public Viewer: [http://localhost:3000](http://localhost:3000)
-- City Admin: [http://localhost:3000/admin](http://localhost:3000/admin)
+- Public Viewer (Postgres aggregates): [http://localhost:3000](http://localhost:3000)
+- City Admin (Postgres mutations + reviewed import pipeline): [http://localhost:3000/admin](http://localhost:3000/admin)
+
+> **Reminder:** Routes are `force-dynamic`; without `DATABASE_URL` or a reachable DB you’ll see onboarding cards instead of the dashboard. Optionally run **Ollama** when exercising free-text admin import (`OLLAMA_*` vars in `.env.example`).
 
 ## Scripts
 
@@ -90,12 +92,19 @@ npm run db:migrate   # applies migrations/*.sql once each (tracks schema_migrati
 npm run db:check     # Greenville row-count sanity check
 ```
 
-## Phase 2 scope
+## Phase 2 baseline
 
 - Docker Compose Postgres (`postgres:16-alpine`), persistent volume, healthcheck.
 - Schema + indexes + scaling/partitioning commentary in `migrations/001_initial_schema.sql`.
 - Greenville seed in `migrations/002_seed_greenville.sql`.
-- `src/server/db.ts` typed query helpers (offset + keyset sketch for `start_year`).
+- `src/server/db.ts` typed helpers (reads + Sprint 4 mutations).
 - `src/lib/sorting.ts` whitelist mapping for SQL `ORDER BY`.
 
-Deferred: LLM import, CRUD UI, auth, charts, Vitest, wiring `/` and `/admin` to Postgres.
+## Deferred / Stretch
+
+Full multi-city switching, hardened OAuth-backed admin guards, richer charts/tests — see Sprint 5 / stretch checklist in `docs/TODO.md`.
+
+## Sprint 3 (LLM import) reminder
+
+Configured via `.env.example`: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `LLM_INFERENCE_MODE`, `ENABLE_CLOUD_FALLBACK`, `GEMINI_API_KEY`, optional timeouts. Inference stays **server-only**; `/admin` parses text through `POST /api/import-action`, then persists only after manual confirmation.
+

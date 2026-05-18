@@ -12,15 +12,77 @@ export function percentOfBaseline(reduction: number, baseline: number): number {
   return (reduction / baseline) * 100;
 }
 
-export function isOnTrack(
-  reduction: number,
-  baseline: number,
-  targetYear: number,
-  currentYear = new Date().getFullYear()
-): boolean {
-  void targetYear;
-  void currentYear;
+function clampFraction(value: number): number {
+  if (Number.isNaN(value) || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+}
 
-  // TODO Sprint 4: replace this placeholder with a projection against the target year.
-  return percentOfBaseline(reduction, baseline) >= 20;
+/**
+ * When there are tracked actions we anchor the glide path on the earliest `startYear`,
+ * clipped so there is room to reach targetYear (“start before net-zero”).
+ * When there are no actions we fall back to a nominal 12-year planning window preceding
+ * `targetYear`, still clipped to stay before net-zero — this avoids division-by-zero
+ * while documenting that demos without modeled actions behave like zero reduction.
+ *
+ * Sprint 4 heuristic (demo): modeled annual programmatic reductions (`summedAnnualReduction`)
+ * should meet-or-beat a linear wedge of eliminating `baselineAnnual` over `[glideStart, targetYear]`.
+ */
+export function glidePathStartYearFromActions(
+  actions: readonly Pick<ClimateAction, "startYear">[],
+  targetYear: number,
+): number {
+  if (targetYear <= 1900 + 1) {
+    return 1900;
+  }
+
+  if (actions.length > 0) {
+    const earliest = Math.min(...actions.map((action) => action.startYear));
+    return Math.min(earliest, targetYear - 1);
+  }
+
+  const nominal = Math.max(1900, targetYear - 12);
+  return Math.min(nominal, targetYear - 1);
+}
+
+export function projectedLinearAnnualReductionDemand(
+  baselineAnnualEmissions: number,
+  glideStartYear: number,
+  targetYear: number,
+  currentYear: number,
+): number {
+  if (baselineAnnualEmissions <= 0) {
+    return 0;
+  }
+
+  const spanYears = Math.max(1, targetYear - glideStartYear);
+  const elapsedYears = Math.min(
+    spanYears,
+    Math.max(0, currentYear - glideStartYear),
+  );
+  const fraction = elapsedYears / spanYears;
+  return baselineAnnualEmissions * clampFraction(fraction);
+}
+
+/**
+ * Determines whether summed modeled reductions are ahead of an idealized linear glide path toward
+ * net-zero modeled as eliminating the baseline wedge by targetYear starting at glideStartYear.
+ */
+export function isOnTrack(
+  summedAnnualReduction: number,
+  baselineAnnualEmissions: number,
+  targetYear: number,
+  glideStartYear: number,
+  currentYear = new Date().getFullYear(),
+): boolean {
+  const demanded = projectedLinearAnnualReductionDemand(
+    baselineAnnualEmissions,
+    glideStartYear,
+    targetYear,
+    currentYear,
+  );
+  return summedAnnualReduction + 1e-6 >= demanded;
 }

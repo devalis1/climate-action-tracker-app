@@ -1,4 +1,9 @@
-import { isOnTrack, percentOfBaseline, totalAnnualReduction } from "@/lib/calculations";
+import {
+  glidePathStartYearFromActions,
+  isOnTrack,
+  percentOfBaseline,
+  totalAnnualReduction,
+} from "@/lib/calculations";
 import type { CityProfile } from "@/lib/schemas";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -64,10 +69,15 @@ export function DashboardSummary({ profile }: ProfileMetricsProps) {
 
 export function TrackStatusPanel({ profile }: ProfileMetricsProps) {
   const totalReduction = totalAnnualReduction(profile.actions);
+  const glideStart = glidePathStartYearFromActions(
+    profile.actions,
+    profile.targetYear,
+  );
   const onTrack = isOnTrack(
     totalReduction,
     profile.baselineEmissions,
-    profile.targetYear
+    profile.targetYear,
+    glideStart,
   );
 
   return (
@@ -82,8 +92,12 @@ export function TrackStatusPanel({ profile }: ProfileMetricsProps) {
           </p>
           <h2 className="mt-3 font-heading text-xl font-semibold leading-snug text-white sm:text-2xl">
             {profile.city} is {onTrack ? "on track" : "not yet on track"} for
-            modeled annual reductions versus the city baseline.
+            summed modeled reductions versus the city baseline.
           </h2>
+          <p className="mt-3 text-xs leading-relaxed text-white/55">
+            Deterministic glide from {glideStart}→{profile.targetYear}: modeled reductions should
+            keep pace with a linear wedge of the baseline disappearing by the net-zero horizon.
+          </p>
         </div>
         <span
           className={`inline-flex w-fit items-center rounded-full border px-5 py-2 font-heading text-xs uppercase tracking-[0.16em] ${

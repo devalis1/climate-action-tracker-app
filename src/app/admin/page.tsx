@@ -1,74 +1,118 @@
-import { ActionTable } from "@/components/action-table";
-import { greenvilleProfile } from "@/lib/sample-data";
+import {
+  AdminWorkspace,
+  type ManagedClimateActionRow,
+} from "@/components/admin-workspace";
+import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
+import {
+  DbConfigurationError,
+  DbQueryError,
+  getCityByName,
+  listClimateActionsForCityOffset,
+} from "@/server/db";
 
-const numberFormatter = new Intl.NumberFormat("en-US");
+export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  try {
+    const city = await getCityByName(DEMO_GREENVILLE_CITY_NAME);
+    if (!city) {
+      return <MissingSeedState />;
+    }
+
+    const actions = await listClimateActionsForCityOffset({
+      cityId: city.id,
+      limit: 500,
+      sort: "startYear",
+      direction: "desc",
+    });
+
+    const initialActions: ManagedClimateActionRow[] = actions.map((row) => ({
+      id: row.id,
+      title: row.title,
+      sector: row.sector,
+      annualReductionTonsPerYear: row.annualReductionTonsPerYear,
+      status: row.status,
+      startYear: row.startYear,
+    }));
+
+    return (
+      <AdminWorkspace
+        demoCityLabel={city.name}
+        initialActions={initialActions}
+        initialBaselineTonsPerYear={city.baselineEmissionsTonsPerYear}
+        initialTargetYear={city.targetYear}
+      />
+    );
+  } catch (cause) {
+    if (cause instanceof DbConfigurationError) {
+      return <DatabaseConfigurationHelp />;
+    }
+    if (cause instanceof DbQueryError) {
+      return <DatabaseUnreachable />;
+    }
+
+    throw cause;
+  }
+}
+
+function DatabaseConfigurationHelp() {
   return (
-    <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
-      <section className="mb-8 rounded-[10px] border border-white/15 bg-brand-surface p-8 shadow-brand">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
-              City Admin
-            </p>
-            <h1 className="mt-4 font-heading text-5xl font-semibold text-white">
-              Greenville action workspace
-            </h1>
-            <p className="mt-4 max-w-2xl text-white/70">
-              Phase 1 is a read-only shell. Data is loaded from the Greenville
-              fixture while persistence, auth, CRUD, and LLM import are reserved
-              for later sprints.
-            </p>
-          </div>
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
+          Database unavailable
+        </p>
+        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
+          Set DATABASE_URL to enable admin writes
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-white/70">
+          Copy <code className="font-mono text-[0.7rem]">.env.example</code>{" "}
+          to <code className="font-mono text-[0.7rem]">.env.local</code>, boot
+          Docker Postgres, run{" "}
+          <code className="font-mono text-[0.7rem]">npm run db:migrate</code>, then
+          refresh this page.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[10px] border border-white/15 bg-white/10 p-4">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-cyan-soft">
-                Baseline
-              </p>
-              <p className="mt-2 font-heading text-2xl text-white">
-                {numberFormatter.format(greenvilleProfile.baselineEmissions)} tCO2e
-              </p>
-            </div>
-            <div className="rounded-[10px] border border-white/15 bg-white/10 p-4">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-cyan-soft">
-                Target Year
-              </p>
-              <p className="mt-2 font-heading text-2xl text-white">
-                {greenvilleProfile.targetYear}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+function DatabaseUnreachable() {
+  return (
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <div className="rounded-[12px] border border-[#ffb877]/55 bg-brand-surface p-10 shadow-brand">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ffb877]">
+          Connection failure
+        </p>
+        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
+          Postgres did not respond
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-white/72">
+          Ensure <code className="font-mono text-[0.7rem]">docker compose up -d</code>{" "}
+          is healthy and <code className="font-mono text-[0.7rem]">DATABASE_URL</code>{" "}
+          points at localhost.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-      <section className="mb-6 flex flex-col gap-4 rounded-[10px] border border-white/15 bg-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-heading text-2xl font-semibold text-white">
-            Climate actions
-          </h2>
-          <p className="mt-1 text-sm text-white/65">
-            Read-only table seeded from assessment sample data.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {["Add action", "Edit selected", "Delete selected", "Import from text"].map(
-            (label) => (
-              <button
-                key={label}
-                disabled
-                className="cursor-not-allowed rounded-full border border-brand-accent/50 px-4 py-2 font-heading text-xs uppercase tracking-[0.14em] text-brand-accent/60"
-                type="button"
-              >
-                {label}
-              </button>
-            )
-          )}
-        </div>
-      </section>
-
-      <ActionTable actions={greenvilleProfile.actions} />
+function MissingSeedState() {
+  return (
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
+          Seed missing
+        </p>
+        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
+          Greenville baseline data not found
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-white/72">
+          Run{" "}
+          <code className="font-mono text-[0.7rem]">npm run db:migrate</code> and{" "}
+          <code className="font-mono text-[0.7rem]">npm run db:check</code>, then reload.
+        </p>
+      </div>
     </div>
   );
 }

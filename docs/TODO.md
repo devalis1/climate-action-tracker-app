@@ -86,14 +86,22 @@ Definition of done:
 
 Target duration: 30 minutes
 
-- [ ] Build City Admin baseline/target controls.
-- [ ] Build action CRUD UI.
-- [ ] Build free-text import review-before-save UI.
-- [ ] Build Public Viewer dashboard.
-- [ ] Show total estimated reductions vs baseline.
-- [ ] Show sector breakdown.
-- [ ] Show on-track/not-on-track state.
-- [ ] Add projected emissions chart if time allows.
+Status: Complete — operator verified (Postgres dashboards, `/admin` CRUD + import review-save, build + db:check).
+
+Phase 4 (implementation):
+
+- Started: Monday, May 18, 2026, ~3:32 PM UTC-3
+- Completed: Monday, May 18, 2026, ~4:00 PM UTC-3
+- Elapsed: approximately 28 minutes
+
+- [x] Build City Admin baseline/target controls.
+- [x] Build action CRUD UI.
+- [x] Build free-text import review-before-save UI.
+- [x] Build Public Viewer dashboard.
+- [x] Show total estimated reductions vs baseline.
+- [x] Show sector breakdown.
+- [x] Show on-track/not-on-track state.
+- [ ] Add projected emissions chart if time allows. — stretch not completed
 
 Definition of done:
 
@@ -122,7 +130,7 @@ Definition of done:
 ## Stretch Goals
 
 - [ ] Projected emissions chart.
-- [ ] PostgreSQL persistence fully wired into app routes/server actions.
+- [x] PostgreSQL persistence fully wired into app routes/server actions.
 - [ ] Multiple city management.
 - [ ] Admin authentication with OAuth/JWT-compatible architecture.
 
