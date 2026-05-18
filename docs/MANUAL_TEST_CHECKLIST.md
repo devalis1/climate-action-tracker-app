@@ -10,6 +10,18 @@ Use after `docker compose up -d`, `npm run db:migrate`, `npm run db:check`, and 
 - [ ] Track panel shows on-track / needs acceleration messaging.
 - [ ] Projected emissions trajectory card renders (linear glide to net-zero year).
 
+## Multi-city public viewer (`/city/[slug]`)
+
+- [ ] `/city/greenville` matches Greenville seed (baseline, counts, trajectory, sectors).
+- [ ] `/city/riverside` loads Riverside seed (2 actions) after migration 003.
+- [ ] Unknown slug shows **City not found** (`not-found.tsx`).
+
+## Demo admin gate (`ADMIN_DEMO_SECRET` set)
+
+- [ ] `/admin` shows **Authentication required** until you sign in at **`/admin/login`** with the secret (e.g. from `.env.example`).
+- [ ] After sign-in: workspace loads; **Log out** uses a full-page request to **`/admin/logout`** (clears `admin_demo` + `admin_city_id`) and returns to `/admin/login`.
+- [ ] City selector switches Greenville ↔ Riverside; baseline/actions table updates per city.
+
 ## City Admin (`/admin`)
 
 - [ ] Adjust baseline and/or target year → Save → refresh `/` and confirm values.
@@ -30,5 +42,5 @@ Use after `docker compose up -d`, `npm run db:migrate`, `npm run db:check`, and 
 
 ## Database
 
-- [ ] `npm run db:check` → `ok: true`, six Greenville actions (after seed).
+- [ ] `npm run db:check` → `ok: true`, Greenville + Riverside slug seed (after migration 003).
 - [ ] Optional: `docker compose exec postgres psql …` per `README.md` to inspect rows.

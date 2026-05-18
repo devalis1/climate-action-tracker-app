@@ -135,10 +135,35 @@ Definition of done:
 - The AI workflow write-up answers all four assessment questions.
 - Remaining stretch goals are clearly documented.
 
+## Sprint 6: Stretch polish (PDF extras — multi-city read + admin + auth UX + QA)
+
+Target duration: 45 minutes
+
+Status: Complete — agent: multi-city read + demo admin auth + Vitest + browser QA (operator: `npm run db:migrate` if DB predates migration 003).
+
+Phase 6 (implementation):
+
+- Started: Monday, May 18, 2026, ~4:50 PM UTC-3
+- Completed: Monday, May 18, 2026, ~5:23 PM UTC-3
+- Elapsed: approximately 33 minutes
+
+- [x] Multi-city read routing + seed (`/city/[slug]`, Riverside rowset, `cities.slug` migration).
+- [x] Demo admin gate: Bearer/cookie `ADMIN_DEMO_SECRET`, `/admin/login`, `/admin/logout`, `isDemoAdminAuthenticated`; JWT peek helper + tests (no JWKS verifier).
+- [x] Multi-city `/admin`: `admin_city_id` cookie, city selector, `resolveAdminContextCityId`, DB-first revalidation + `admin-city-context` tests.
+- [x] Trajectory chart axis / current-year marker; Vitest `src/` coverage include/exclude tune.
+- [x] `db:check` + README aligned with Riverside seed; operators must migrate.
+- [x] `assessment-notes.md` PDF alignment table; Log out uses `<a href="/admin/logout">` for reliable cookie clear.
+
+Definition of done:
+
+- Greenville remains default **`/`**; **`npm run db:migrate`** applies slug migration cleanly.
+- PDF stretch extras for this assessment are Phase 6 only (no separate Phase 7).
+- Production JWKS/OAuth remains deferred (see Stretch Goals).
+
 ## Stretch Goals
 
 - [x] Projected emissions chart (SVG trajectory on `/`, Open Earth palette — no extra chart library).
 - [x] PostgreSQL persistence fully wired into app routes/server actions.
-- [ ] Multiple city management — deferred: Greenville remains primary; extension via `city_id` + routing noted in migrations/db helpers.
-- [ ] Admin authentication with OAuth/JWT-compatible architecture — partial: optional `ADMIN_DEMO_SECRET` + `admin_demo` cookie gate in `src/server/admin-auth.ts` for session-token/OAuth claim mapping later.
+- [x] Multiple city management (**admin UX**): `/admin` selector + `admin_city_id` + `listCitiesSummary` (bounded query).
+- [ ] Admin authentication — **production**: OAuth/JWT with **JWKS signature verification** in-repo (or trusted upstream session). **Demo slice shipped:** `ADMIN_DEMO_SECRET` + `/admin/login` cookie + Bearer parity; **`peekUnverifiedJwtClaims`** remains non-auth.
 

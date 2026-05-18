@@ -1,20 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { z } from "zod";
 
+import {
+  ADMIN_CITY_ID_COOKIE,
+  citySlugPublicPaths,
+} from "@/lib/admin-city-context";
 import {
   createClimateActionMutationSchema,
   deleteClimateActionMutationSchema,
   updateCityBaselineMutationSchema,
   updateClimateActionMutationSchema,
 } from "@/lib/admin-mutation-schemas";
-import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
+import { PUBLIC_VIEWER_SLUGS } from "@/lib/public-viewer-slugs";
 import { assertDemoAdminWritesAllowed } from "@/server/admin-auth";
+import { resolveAdminContextCityId } from "@/server/admin-city-resolve";
 import {
   DbConfigurationError,
   deleteClimateAction,
-  getCityByName,
+  getCityById,
   insertClimateAction,
+  listCitiesSummary,
   updateCityBaselineAndTarget,
   updateClimateAction,
 } from "@/server/db";
@@ -22,6 +30,15 @@ import {
 export type MutationResult =
   | { ok: true }
   | { ok: false; message: string };
+
+function adminCityCookieOptions() {
+  return {
+    httpOnly: true as const,
+    sameSite: "lax" as const,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+  };
+}
 
 function publicMessageFromUnknown(reason: unknown, fallback: string): string {
   if (reason instanceof DbConfigurationError) {
@@ -39,14 +56,51 @@ function publicMessageFromUnknown(reason: unknown, fallback: string): string {
   return safe && !looksTechnical ? safe : fallback;
 }
 
-async function greenvilleDemoCityId(): Promise<number> {
-  const city = await getCityByName(DEMO_GREENVILLE_CITY_NAME);
-  if (!city) {
-    throw new Error(
-      `Demo city "${DEMO_GREENVILLE_CITY_NAME}" was not found. Run npm run db:migrate.`,
-    );
+async function revalidatePublicViewerSurfacesAfterMutation(): Promise<void> {
+  revalidatePath("/admin");
+  revalidatePath("/");
+
+  try {
+    const rows = await listCitiesSummary();
+    const slugs = rows.map((row) => row.slug).filter(Boolean);
+    for (const path of citySlugPublicPaths(slugs)) {
+      revalidatePath(path);
+    }
+    return;
+  } catch {
+    /* fall through */
   }
-  return city.id;
+
+  for (const slug of PUBLIC_VIEWER_SLUGS) {
+    revalidatePath(`/city/${slug}`);
+  }
+}
+
+export async function selectAdminCity(input: unknown): Promise<MutationResult> {
+  const parsed = z.coerce.number().int().positive().safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues.map((issue) => issue.message).join(" "),
+    };
+  }
+
+  try {
+    const city = await getCityById(parsed.data);
+    if (!city) {
+      return { ok: false, message: "City not found." };
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set(ADMIN_CITY_ID_COOKIE, String(city.id), adminCityCookieOptions());
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (reason) {
+    return {
+      ok: false,
+      message: publicMessageFromUnknown(reason, "Could not switch city."),
+    };
+  }
 }
 
 export async function saveCityBaselineAndTarget(input: unknown): Promise<MutationResult> {
@@ -60,15 +114,14 @@ export async function saveCityBaselineAndTarget(input: unknown): Promise<Mutatio
   }
 
   try {
-    const cityId = await greenvilleDemoCityId();
+    const cityId = await resolveAdminContextCityId();
     const updated = await updateCityBaselineAndTarget(cityId, {
       baselineEmissionsTonsPerYear: parsed.data.baselineEmissionsTonsPerYear,
       targetYear: parsed.data.targetYear,
     });
     if (!updated) return { ok: false, message: "City profile was not saved." };
 
-    revalidatePath("/admin");
-    revalidatePath("/");
+    await revalidatePublicViewerSurfacesAfterMutation();
     return { ok: true };
   } catch (reason) {
     return {
@@ -89,7 +142,7 @@ export async function saveNewClimateAction(input: unknown): Promise<MutationResu
   }
 
   try {
-    const cityId = await greenvilleDemoCityId();
+    const cityId = await resolveAdminContextCityId();
     await insertClimateAction({
       cityId,
       title: parsed.data.title,
@@ -98,8 +151,7 @@ export async function saveNewClimateAction(input: unknown): Promise<MutationResu
       status: parsed.data.status,
       startYear: parsed.data.startYear,
     });
-    revalidatePath("/admin");
-    revalidatePath("/");
+    await revalidatePublicViewerSurfacesAfterMutation();
     return { ok: true };
   } catch (reason) {
     return {
@@ -120,7 +172,7 @@ export async function commitClimateActionChanges(input: unknown): Promise<Mutati
   }
 
   try {
-    const cityId = await greenvilleDemoCityId();
+    const cityId = await resolveAdminContextCityId();
     const updated = await updateClimateAction({
       id: parsed.data.id,
       cityId,
@@ -131,10 +183,9 @@ export async function commitClimateActionChanges(input: unknown): Promise<Mutati
       startYear: parsed.data.startYear,
     });
     if (!updated) {
-      return { ok: false, message: "Action not found or not in this demo city." };
+      return { ok: false, message: "Action not found or not in this city." };
     }
-    revalidatePath("/admin");
-    revalidatePath("/");
+    await revalidatePublicViewerSurfacesAfterMutation();
     return { ok: true };
   } catch (reason) {
     return {
@@ -155,7 +206,7 @@ export async function removeClimateAction(input: unknown): Promise<MutationResul
   }
 
   try {
-    const cityId = await greenvilleDemoCityId();
+    const cityId = await resolveAdminContextCityId();
     const ok = await deleteClimateAction({
       id: parsed.data.id,
       cityId,
@@ -163,8 +214,7 @@ export async function removeClimateAction(input: unknown): Promise<MutationResul
     if (!ok) {
       return { ok: false, message: "Action not found or already removed." };
     }
-    revalidatePath("/admin");
-    revalidatePath("/");
+    await revalidatePublicViewerSurfacesAfterMutation();
     return { ok: true };
   } catch (reason) {
     return {

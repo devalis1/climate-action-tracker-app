@@ -35,6 +35,7 @@ export class DbQueryError extends Error {
 export interface CityRecord {
   id: number;
   name: string;
+  slug: string;
   baselineEmissionsTonsPerYear: number;
   targetYear: number;
   createdAt: Date;
@@ -56,6 +57,12 @@ export interface ClimateActionRecord {
 export interface ClimateActionListCursor {
   startYear: number;
   id: number;
+}
+
+export interface CitySummaryRow {
+  id: number;
+  name: string;
+  slug: string;
 }
 
 let pool: pg.Pool | undefined;
@@ -80,6 +87,7 @@ export function getPool(): pg.Pool {
 function mapCity(row: {
   id: number;
   name: string;
+  slug: string;
   baseline_emissions_tons_per_year: string | number;
   target_year: number;
   created_at: Date;
@@ -88,6 +96,7 @@ function mapCity(row: {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug,
     baselineEmissionsTonsPerYear: Number(row.baseline_emissions_tons_per_year),
     targetYear: row.target_year,
     createdAt: row.created_at,
@@ -136,7 +145,7 @@ async function withClient<T>(
 export async function getCityById(id: number): Promise<CityRecord | null> {
   return withClient(async (client) => {
     const result = await client.query(
-      `SELECT id, name, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
        FROM cities WHERE id = $1`,
       [id],
     );
@@ -148,12 +157,48 @@ export async function getCityById(id: number): Promise<CityRecord | null> {
 export async function getCityByName(name: string): Promise<CityRecord | null> {
   return withClient(async (client) => {
     const result = await client.query(
-      `SELECT id, name, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
        FROM cities WHERE name = $1`,
       [name],
     );
     const row = result.rows[0];
     return row ? mapCity(row) : null;
+  });
+}
+
+export async function getCityBySlug(slug: string): Promise<CityRecord | null> {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return null;
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+       FROM cities WHERE slug = $1`,
+      [normalized],
+    );
+    const row = result.rows[0];
+    return row ? mapCity(row) : null;
+  });
+}
+
+const ADMIN_CITY_LIST_LIMIT = 500;
+
+/** Lightweight list for admin city selector (bounded; no action rows). */
+export async function listCitiesSummary(): Promise<CitySummaryRow[]> {
+  return withClient(async (client) => {
+    const result = await client.query<{
+      id: number;
+      name: string;
+      slug: string;
+    }>(
+      `SELECT id, name, slug FROM cities ORDER BY name ASC LIMIT $1`,
+      [ADMIN_CITY_LIST_LIMIT],
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+    }));
   });
 }
 
@@ -265,7 +310,7 @@ export async function updateCityBaselineAndTarget(
            target_year = $3,
            updated_at = NOW()
        WHERE id = $1
-       RETURNING id, name, baseline_emissions_tons_per_year, target_year,
+       RETURNING id, name, slug, baseline_emissions_tons_per_year, target_year,
                  created_at, updated_at`,
       [cityId, baseline, targetYear],
     );

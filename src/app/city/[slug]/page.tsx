@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { PublicCityDashboard } from "@/components/public-city-dashboard";
 import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
@@ -6,17 +7,21 @@ import { cityAndClimateRowsToCityProfile } from "@/lib/profile-map";
 import {
   DbConfigurationError,
   DbQueryError,
-  getCityByName,
+  getCityBySlug,
   listClimateActionsForCityOffset,
 } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function PublicViewerPage() {
+type PageProps = { params: Promise<{ slug: string }> };
+
+export default async function CitySlugViewerPage(props: PageProps) {
+  const { slug } = await props.params;
+
   try {
-    const city = await getCityByName(DEMO_GREENVILLE_CITY_NAME);
+    const city = await getCityBySlug(slug);
     if (!city) {
-      return <ViewerMissingSeedState />;
+      notFound();
     }
 
     const actionRows = await listClimateActionsForCityOffset({
@@ -41,22 +46,32 @@ export default async function PublicViewerPage() {
       })),
     );
 
+    const introBody =
+      city.name === DEMO_GREENVILLE_CITY_NAME ? (
+        <>
+          Postgres-backed totals for {profile.city}: inventoried programs, summed modeled
+          reductions, sector exposure, and the same transparent glide heuristic as the home
+          viewer. Default demo also lives at{" "}
+          <Link
+            href="/"
+            className="font-mono text-brand-accent underline-offset-4 hover:underline"
+          >
+            /
+          </Link>
+          .
+        </>
+      ) : (
+        <>
+          Postgres-backed totals for {profile.city}: inventoried programs, summed modeled
+          reductions, sector exposure, and a transparent glide path versus the inventoried
+          baseline.
+        </>
+      );
+
     return (
       <PublicCityDashboard
-        introBody={
-          <>
-            Postgres-backed totals for the Greenville demo footprint: inventoried programs,
-            summed modeled reductions, sector exposure, and a transparent on-track glide path
-            versus the baseline.             Multi-city read slice:{" "}
-            <Link
-              href={`/city/${encodeURIComponent(city.slug)}`}
-              className="font-mono text-brand-accent underline-offset-4 hover:underline"
-            >
-              /city/{city.slug}
-            </Link>
-            .
-          </>
-        }
+        eyebrow={`City · ${city.slug}`}
+        introBody={introBody}
         profile={profile}
       />
     );
@@ -80,25 +95,6 @@ export default async function PublicViewerPage() {
   }
 }
 
-function ViewerMissingSeedState() {
-  return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
-          Seed missing
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
-          Greenville baseline data not found
-        </h1>
-        <p className="mt-4 text-sm leading-relaxed text-white/72">
-          Run{" "}
-          <code className="font-mono text-[0.7rem]">npm run db:migrate</code> and refresh.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function DatabaseMissingMessage() {
   return (
     <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
@@ -109,7 +105,7 @@ function DatabaseMissingMessage() {
         Configure DATABASE_URL
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-white/72">
-        The public viewer now reads Postgres. Copy{" "}
+        The public viewer reads Postgres. Copy{" "}
         <code className="font-mono text-[0.7rem]">.env.example</code>{" "}
         to <code className="font-mono text-[0.7rem]">.env.local</code>, start Docker Postgres,
         and run migrations.

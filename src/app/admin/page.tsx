@@ -1,20 +1,37 @@
+import Link from "next/link";
+
 import {
   AdminWorkspace,
+  type AdminCityOption,
   type ManagedClimateActionRow,
 } from "@/components/admin-workspace";
-import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
+import { isDemoAdminAuthenticated } from "@/server/admin-auth";
+import { resolveAdminContextCityId } from "@/server/admin-city-resolve";
 import {
   DbConfigurationError,
   DbQueryError,
-  getCityByName,
+  getCityById,
+  listCitiesSummary,
   listClimateActionsForCityOffset,
 } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  const demoAuthEnabled = Boolean(process.env.ADMIN_DEMO_SECRET?.trim());
+
+  if (!(await isDemoAdminAuthenticated())) {
+    return <AdminLoginRequired />;
+  }
+
   try {
-    const city = await getCityByName(DEMO_GREENVILLE_CITY_NAME);
+    const cities = await listCitiesSummary();
+    if (cities.length === 0) {
+      return <MissingSeedState />;
+    }
+
+    const selectedId = await resolveAdminContextCityId();
+    const city = await getCityById(selectedId);
     if (!city) {
       return <MissingSeedState />;
     }
@@ -35,12 +52,21 @@ export default async function AdminPage() {
       startYear: row.startYear,
     }));
 
+    const cityOptions: AdminCityOption[] = cities.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+    }));
+
     return (
       <AdminWorkspace
+        cityOptions={cityOptions}
+        demoAuthEnabled={demoAuthEnabled}
         demoCityLabel={city.name}
         initialActions={initialActions}
         initialBaselineTonsPerYear={city.baselineEmissionsTonsPerYear}
         initialTargetYear={city.targetYear}
+        selectedCityId={city.id}
       />
     );
   } catch (cause) {
@@ -53,6 +79,41 @@ export default async function AdminPage() {
 
     throw cause;
   }
+}
+
+function AdminLoginRequired() {
+  return (
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <div className="rounded-[12px] border border-brand-accent/45 bg-brand-surface p-10 shadow-brand">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
+          Authentication required
+        </p>
+        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
+          Admin workspace is gated
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-white/72">
+          This deployment has{" "}
+          <code className="font-mono text-[0.7rem]">ADMIN_DEMO_SECRET</code> set.
+          Sign in with the same value to continue (stored as an HTTP-only{" "}
+          <code className="font-mono text-[0.7rem]">admin_demo</code> cookie).
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            className="rounded-full bg-brand-accent/90 px-6 py-3 font-heading text-xs uppercase tracking-[0.16em] text-[#07130c] shadow-[0_14px_40px_-18px_rgba(98,245,138,0.55)] hover:bg-brand-accent"
+            href="/admin/login"
+          >
+            Sign in
+          </Link>
+          <Link
+            className="rounded-full border border-white/35 px-5 py-3 font-heading text-xs uppercase tracking-[0.16em] text-white hover:border-white"
+            href="/"
+          >
+            Public viewer
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DatabaseConfigurationHelp() {
@@ -105,7 +166,7 @@ function MissingSeedState() {
           Seed missing
         </p>
         <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
-          Greenville baseline data not found
+          No cities found in the database
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-white/72">
           Run{" "}

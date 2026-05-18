@@ -9,6 +9,7 @@ import {
   removeClimateAction,
   saveCityBaselineAndTarget,
   saveNewClimateAction,
+  selectAdminCity,
 } from "@/app/admin/actions";
 import { climateActionSchema, type Sector, type Status } from "@/lib/schemas";
 
@@ -33,8 +34,17 @@ export type ManagedClimateActionRow = {
   startYear: number;
 };
 
+export type AdminCityOption = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 type AdminWorkspaceProps = {
   demoCityLabel: string;
+  cityOptions: AdminCityOption[];
+  selectedCityId: number;
+  demoAuthEnabled: boolean;
   initialBaselineTonsPerYear: number;
   initialTargetYear: number;
   initialActions: ManagedClimateActionRow[];
@@ -58,6 +68,9 @@ const emptyDraft = (): ActionDraftBase => ({
 
 export function AdminWorkspace({
   demoCityLabel,
+  cityOptions,
+  selectedCityId,
+  demoAuthEnabled,
   initialBaselineTonsPerYear,
   initialTargetYear,
   initialActions,
@@ -72,6 +85,9 @@ export function AdminWorkspace({
     String(initialTargetYear),
   );
   const [cityMessage, setCityMessage] = useState<string | null>(null);
+  const [citySwitchMessage, setCitySwitchMessage] = useState<string | null>(
+    null,
+  );
 
   const [importText, setImportText] = useState("");
   const [importStatus, setImportStatus] = useState<
@@ -105,9 +121,26 @@ export function AdminWorkspace({
     });
   }
 
+  async function handleCityChange(nextId: number) {
+    if (nextId === selectedCityId) return;
+    setCitySwitchMessage(null);
+    setCityMessage(null);
+    setActionMessage(null);
+
+    const result = await selectAdminCity(nextId);
+    if (!result.ok) {
+      setCitySwitchMessage(result.message);
+      return;
+    }
+
+    beginCreate();
+    bumpRoute();
+  }
+
   async function submitCityProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setCityMessage(null);
+    setCitySwitchMessage(null);
 
     const result = await saveCityBaselineAndTarget({
       baselineEmissionsTonsPerYear: baselineInput,
@@ -286,18 +319,57 @@ export function AdminWorkspace({
     <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
       <section className="mb-8 rounded-[10px] border border-white/15 bg-brand-surface p-8 shadow-brand">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
-              City Admin
-            </p>
-            <h1 className="mt-4 font-heading text-5xl font-semibold text-white">
-              {demoCityLabel} action workspace
-            </h1>
-            <p className="mt-4 max-w-2xl text-white/70">
-              Sprint 4 persists baseline, target year, and climate actions to
-              PostgreSQL. Review LLM imports before saving — nothing is written
-              until you confirm.
-            </p>
+          <div className="space-y-4">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
+                City Admin
+              </p>
+              <h1 className="mt-4 font-heading text-5xl font-semibold text-white">
+                {demoCityLabel} action workspace
+              </h1>
+              <p className="mt-4 max-w-2xl text-white/70">
+                Sprint 4 persists baseline, target year, and climate actions to
+                PostgreSQL. Choose a city to scope CRUD + profile saves; review LLM
+                imports before saving — nothing is written until you confirm.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+              <label className="flex min-w-[240px] flex-col gap-2 text-sm text-white/70">
+                <span className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-brand-cyan-soft">
+                  Managing city
+                </span>
+                <select
+                  className="rounded-[10px] border border-white/15 bg-brand-bg-deep/80 px-4 py-3 text-sm text-white outline-hidden ring-brand-accent/35 focus:ring-2"
+                  onChange={(event) => {
+                    void handleCityChange(Number(event.target.value));
+                  }}
+                  value={selectedCityId}
+                >
+                  {cityOptions.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name} ({city.slug})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {citySwitchMessage ? (
+                <p className="text-xs text-[#ffb877] sm:pb-3" role="alert">
+                  {citySwitchMessage}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 lg:justify-end">
+            {demoAuthEnabled ? (
+              <a
+                className="rounded-full border border-white/35 px-5 py-3 font-heading text-xs uppercase tracking-[0.16em] text-white hover:border-white"
+                href="/admin/logout"
+              >
+                Log out
+              </a>
+            ) : null}
           </div>
         </div>
       </section>

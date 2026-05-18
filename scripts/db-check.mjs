@@ -1,5 +1,5 @@
 /**
- * Quick sanity check: Greenville row counts after migrate + seed.
+ * Quick sanity check: Greenville + seeded multi-city Riverside after migrate.
  */
 import dotenv from "dotenv";
 import path from "node:path";
@@ -32,22 +32,44 @@ async function main() {
       ["Greenville"],
     );
 
+    const gvSlug = await client.query(
+      "SELECT COUNT(*)::int AS n FROM cities WHERE slug = $1",
+      ["greenville"],
+    );
+    const rs = await client.query(
+      "SELECT COUNT(*)::int AS n FROM cities WHERE slug = $1 AND name = $2",
+      ["riverside", "Riverside"],
+    );
+    const rsActions = await client.query(
+      `SELECT COUNT(*)::int AS n FROM climate_actions ca
+       INNER JOIN cities c ON c.id = ca.city_id
+       WHERE c.slug = $1`,
+      ["riverside"],
+    );
+
     const cityOk = cities.rows[0]?.n === 1;
     const actionsOk = actions.rows[0]?.n === 6;
+    const slugOk =
+      gvSlug.rows[0]?.n === 1 &&
+      rs.rows[0]?.n === 1 &&
+      rsActions.rows[0]?.n === 2;
 
     console.log(
       JSON.stringify(
         {
           greenvilleCityRows: cities.rows[0]?.n,
           greenvilleActionRows: actions.rows[0]?.n,
-          ok: cityOk && actionsOk,
+          greenvilleSlugRows: gvSlug.rows[0]?.n,
+          riversideCityRows: rs.rows[0]?.n,
+          riversideActionRows: rsActions.rows[0]?.n,
+          ok: cityOk && actionsOk && slugOk,
         },
         null,
         2,
       ),
     );
 
-    if (!cityOk || !actionsOk) {
+    if (!cityOk || !actionsOk || !slugOk) {
       process.exitCode = 1;
     }
   } finally {

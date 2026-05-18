@@ -4,7 +4,7 @@ Start Time: Saturday, May 16, 2026, 11:15 AM UTC-3
 
 ## Current State
 
-**Phase 1–4** remain as shipped earlier; **Phase 5 / Sprint 5** adds **Vitest** (`vitest.config.ts`, `npm test`), **unit tests** under `src/lib/*.test.ts`, **mocked `POST /api/import-action` integration test** (`src/app/api/import-action/route.integration.test.ts`), **`docs/AI_WORKFLOW_RESPONSE.md`** (answers all **four** PDF workflow questions), **`docs/MANUAL_TEST_CHECKLIST.md`**, **`npm run db:smoke`**, README refresh, and a **stretch SVG trajectory chart** on **`/`** (`src/components/emissions-trajectory-chart.tsx` + `projectedAnnualEmissionsTonsForYear` in `src/lib/calculations.ts`). **Admin guard:** optional **`ADMIN_DEMO_SECRET`** + cookie **`admin_demo`** via **`src/server/admin-auth.ts`** (OAuth/JWT extension point); default remains open for demos.
+**Phase 1–4** remain as shipped earlier; **Phase 5 / Sprint 5** adds **Vitest** (`vitest.config.ts`, `npm test`), **unit tests** under `src/lib/*.test.ts`, **mocked `POST /api/import-action` integration test** (`src/app/api/import-action/route.integration.test.ts`), **`docs/AI_WORKFLOW_RESPONSE.md`** (answers all **four** PDF workflow questions), **`docs/MANUAL_TEST_CHECKLIST.md`**, **`npm run db:smoke`**, README refresh, and a **stretch SVG trajectory chart** on **`/`** (`src/components/emissions-trajectory-chart.tsx` + `projectedAnnualEmissionsTonsForYear` in `src/lib/calculations.ts`). **Phase 6 (PDF stretch extras — single phase, no separate Phase 7):** **`/city/[slug]`** + **`migrations/003_city_slugs_and_riverside_seed.sql`** (Greenville slug + Riverside demo), **`PublicCityDashboard`**, **`db:check`** Riverside counts, **`EmissionsTrajectoryChart`** axes + calendar-year marker, Vitest **`admin-mutation`** + **`admin-jwt-peek`** + **`admin-city-context`** + coverage include/exclude tuning; optional **`ADMIN_DEMO_SECRET`** via **`Authorization: Bearer …`** or **`admin_demo`** (`src/server/admin-auth.ts`); **`/admin/login`**, **`/admin/logout`**, **`isDemoAdminAuthenticated`** gate; **multi-city admin** — HTTP-only **`admin_city_id`**, **`listCitiesSummary`** selector, **`resolveAdminContextCityId`**, **`selectAdminCity`**, **`citySlugPublicPaths`** revalidation with **`PUBLIC_VIEWER_SLUGS`** fallback; **Log out** is **`<a href="/admin/logout">`** so Route Handler cookie expiry runs on full navigation. **JWT peek** (`src/lib/admin-jwt-peek.ts`) remains **unverified** / non-auth.
 
 **Sprint 3 (unchanged):** `src/server/llm.ts` — Ollama, Zod, repair retry, optional Gemini, server-only keys. **`POST /api/import-action`** remains parse-only until `/admin` saves.
 
@@ -60,7 +60,9 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **`src/server/llm.ts`**: Ollama **`/api/chat`** body sets **`think: false`** so thinking-capable models (default **`qwen3.5`** in `.env.example`) put structured output in **`message.content`** instead of timing out / returning empty **`content`** while filling **`thinking`**.
 - **Sprint 4**: Expanded **`src/server/db.ts`** mutations + **`src/lib/admin-mutation-schemas.ts`**, Greenville demo constant (`src/lib/demo-city.ts`), profile mappers (`src/lib/profile-map.ts`), **`AdminWorkspace`** client UX, onboarding fallbacks when `DATABASE_URL` is absent, deterministic **`calculations.ts`** glide heuristic, `README.md` refresh for Postgres-first workflow.
 - **Sprint 4 follow-up**: **`createClimateActionMutationSchema` / `updateClimateActionMutationSchema`** coerce **`annualReduction`** and **`startYear`** from string form values (`z.coerce.number`) so **Save to Postgres** from the composer accepts normal HTML inputs without Zod **`expected number, received string`** failures.
-- **Sprint 5**: Vitest + **`npm test`** / **`test:watch`** / **`test:coverage`**; unit tests for **`src/lib/calculations.ts`**, **`src/lib/sorting.ts`**, **`src/lib/schemas.ts`**, **`src/lib/pdf-led-import-fixture.ts`**; **integration-style** mocked **`POST /api/import-action`** test; **`scripts/db-smoke.mjs`** + **`npm run db:smoke`**; **`docs/AI_WORKFLOW_RESPONSE.md`**, **`docs/MANUAL_TEST_CHECKLIST.md`**, README overhaul; **`EmissionsTrajectoryChart`** on **`/`**; **`src/server/admin-auth.ts`** optional cookie gate; removed inert **`assertDemoAdminWritesAllowed` stub** from **`src/server/db.ts`**.
+- **Sprint 5**: Vitest + **`npm test`** / **`test:watch`** / **`test:coverage`**; unit tests for **`src/lib/calculations.ts`**, **`src/lib/sorting.ts`**, **`src/lib/schemas.ts`**, **`src/lib/pdf-led-import-fixture.ts`**; **integration-style** mocked **`POST /api/import-action`** test; **`scripts/db-smoke.mjs`** + **`npm run db:smoke`**; **`docs/AI_WORKFLOW_RESPONSE.md`**, **`docs/MANUAL_TEST_CHECKLIST.md`**, README overhaul; **`EmissionsTrajectoryChart`** on **`/`**; **`src/server/admin-auth.ts`** optional gate; removed inert **`assertDemoAdminWritesAllowed` stub** from **`src/server/db.ts`**.
+- **Phase 6 (PDF stretch extras — one block):** Migration **`003`** (`cities.slug`, Greenville backfill, Riverside + 2 actions); **`getCityBySlug`**, **`listCitiesSummary`**; **`/city/[slug]`** + **`not-found`**; **`PublicCityDashboard`**; home → slug links; **`PUBLIC_VIEWER_SLUGS`** comment + DB-first revalidation (**`citySlugPublicPaths`**) after mutations; **`EmissionsTrajectoryChart`** axis + “now” marker; Bearer/cookie **`ADMIN_DEMO_SECRET`** gate, **`/admin/login`**, **`/admin/logout`**, **`isDemoAdminAuthenticated`**; multi-city **`/admin`** (**`admin_city_id`**, **`resolveAdminContextCityId`**, **`selectAdminCity`**); **`src/lib/admin-city-context.ts`**, **`src/server/admin-city-resolve.ts`**, **`admin-city-context.test.ts`**; **`admin-jwt-peek.ts`**, **`admin-jwt-peek.test.ts`**, **`admin-mutation-schemas.test.ts`**; **`vitest.config.ts`** coverage tune; **`scripts/db-check.mjs`** Riverside; README / **`.env.example`**; **`<a>` logout** for cookie clear; **`assessment-notes.md`** PDF alignment table + browser QA notes in **Verified**.
+- **`EmissionsTrajectoryChart` UX:** baseline cap in the blurb **and** upper-left SVG caption; **`w-full`** card (**no** inner `max-w-3xl`) so it aligns with **`DashboardSummary`** inside the **`max-w-7xl`** shell; plot height via **`clamp()`** (**`~13–26rem`** → **`~15–32rem`** sm+).
 
 ## Verified
 
@@ -83,31 +85,34 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **`npm run build`** (Monday, May 18, 2026) after Sprint 4 edits — TypeScript passes; **`ƒ /`**, **`ƒ /admin`**, **`ƒ /api/import-action`** in route manifest.
 - **Operator-manual Sprint 4 QA** (Compose + Postgres + browser): verifies **`/`** aggregates + **`/admin`** baseline/target save, **`climate_actions`** CRUD, and import **review-before-save → persist** aligns with seeded Greenville data after cleanup.
 - **Repository sanity** (after operator fixed npm registry): **`npm test`** — **32 tests passed** (Vitest 3.2.4); **`npm run build`** — **exit 0** (Next.js 16.2.6); **`npm run db:check`** / **`npm run db:smoke`** — **`ok: true`** (Greenville 1 city / 6 actions); **`npm run test:coverage`** — **exit 0**.
+- **Phase 6 (agent + operator DB with migration 003):** **`npm test`** — **41 passed**; **`npm run build`** — success (route **`ƒ /city/[slug]`**); **`npm run db:migrate`** + **`npm run db:check`** — **`ok: true`** (Greenville + Riverside slug seed); **`npm run test:coverage`** — exit **0** with trimmed `src/` include/exclude table.
 - **Final pre-commit sanity (re-run):** **`npm test`** — **32 passed**; **`npm run build`** — **success**; **`npm run db:check`** — **`ok: true`** — immediately before operator commit.
 - **Still optional before Q&A demo:** walk **`docs/MANUAL_TEST_CHECKLIST.md`** in the browser (especially **`/admin`** import with live Ollama/Gemini if demonstrating LLM).
-- **Browser sanity (Phase 5 agent):** Lightweight check — **`curl http://localhost:3000/` → `200`** (existing local **Next dev** on port 3000). Full UI pass (KPI strip, trajectory chart, `/admin` CRUD + import) remains **operator** via **`docs/MANUAL_TEST_CHECKLIST.md`** (MCP browser not invoked here).
+- **Phase 6 final verification (May 18, 2026):** **`npm test`** (**48** passed), **`npm run build`**, **`npm run db:check`** (**`ok: true`**); **MCP browser** pass on **`/`**, **`/city/greenville`**, **`/city/riverside`**, **`/city/unknown-city-slug`** (not-found), **`/admin`** gate, **`/admin/login`** (configured secret), multi-city selector (Greenville ↔ Riverside), **`GET /admin/logout`**; **`docs/assessment-notes.md`** PDF alignment table; **`<a href="/admin/logout">`** for reliable cookie clear. **Note:** Next.js **dev** hydration overlay text was observed on **`/city/riverside`** in automation; confirm with **`npm run start`** if needed.
+- **Trajectory chart (follow-up):** hard refresh **`/`** or **`/city/[slug]`** — confirm **no** tons glyph on the SVG; smaller footprint (`emissions-trajectory-chart.tsx`).
 
 ## Next
 
-- Submission / GitHub zip: working tree ready after operator **commit + push**; optional browser + LLM demo per **`docs/MANUAL_TEST_CHECKLIST.md`**.
+- Operator: re-run **`npm run db:migrate`** on any environment that predates **`003_city_slugs_and_riverside_seed.sql`**, then **`db:check`**.
+- Submission zip / PR: optional **`docs/MANUAL_TEST_CHECKLIST.md`** pass including **`/city/riverside`** and **`/city/greenville`**.
 
 ## Operator-Owned Actions
 
-- **Commit and push** this Phase 5 / test-completion batch when satisfied (agents do not run `git commit` / `git push`).
-- Optional: archive **`coverage/`** is gitignored; do not commit coverage HTML unless you explicitly want it in the repo.
+- **Commit and push** when satisfied (agents do not run `git commit` / `git push`).
+- After pulling: if **`db:check`** errors on missing **`slug`**, run **`npm run db:migrate`** once.
 
 ## Final sanity matrix (Phase 5)
 
 | Area | PDF requirement | Code / docs evidence |
 | ---- | ---------------- | -------------------- |
 | City Admin | Baseline, target, CRUD, LLM import review-before-save | `/admin` + `src/app/admin/actions.ts` + `admin-workspace.tsx`; import via `POST /api/import-action` + Zod review |
-| Public Viewer | Actions, progress, sectors, on-track | `/` + `src/lib/calculations.ts` + dashboard components |
+| Public Viewer | Actions, progress, sectors, on-track | **`/`**, **`/city/[slug]`** + `src/lib/calculations.ts` + dashboard components |
 | Stack | Next, TS, Postgres, Ollama (+ optional Gemini); keys server-only | `package.json`, `src/server/llm.ts`, `.env.example` |
 | Scale story | Indexes, sort/pagination commentary | `migrations/001_initial_schema.sql`, `src/server/db.ts`, `src/lib/sorting.ts` |
 | Tests | Unit + integration posture | `vitest.config.ts`, `src/lib/*.test.ts`, `route.integration.test.ts`, `docs/MANUAL_TEST_CHECKLIST.md` |
 | Design | Open Earth aesthetic | `docs/DESIGN_SYSTEM.md`, Tailwind brand tokens, trajectory chart palette |
 
-**Intentional gaps vs PDF:** no full multi-city admin UX (Greenville demo only; `city_id` in schema); no production OAuth IdP — optional `ADMIN_DEMO_SECRET` cookie sketch only.
+**Intentional gaps vs PDF:** production **OAuth/OIDC + JWKS** verification in-app is still deferred — Bearer/cookie **`ADMIN_DEMO_SECRET`** + **unverified** JWT payload peek only; **`peekUnverifiedJwtClaims`** must not be treated as authentication until signatures are verified (see file docstring).
 
 ## Timing
 
@@ -127,3 +132,6 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Sprint 5 implementation started Monday, May 18, 2026, ~4:10 PM UTC-3.
 - Phase 5 / Sprint 5 completed Monday, May 18, 2026, ~4:45 PM UTC-3 (agent: tests/docs/chart/guard); post–npm-fix verification: **`npm test`** + **`npm run build`** + DB smoke green.
 - Phase 5 elapsed from implementation start through agent hand-off: approximately 35 minutes.
+- Sprint 6 implementation started Monday, May 18, 2026, ~4:50 PM UTC-3.
+- Phase 6 / Sprint 6 completed Monday, May 18, 2026, ~5:23 PM UTC-3 (agent: PDF stretch — multi-city read, admin selector + demo login, Vitest, browser QA); verification: **`npm test`** + **`npm run build`** + **`npm run db:check`**.
+- Phase 6 elapsed from implementation start through agent hand-off: approximately 33 minutes.

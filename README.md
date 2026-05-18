@@ -1,6 +1,6 @@
 # City Climate Action Tracker
 
-PostgreSQL-backed City Admin CRUD (`/admin`), public Greenville dashboard (`/`), and `POST /api/import-action` for **review-before-save** LLM ingestion. Fixtures in `src/lib/sample-data.ts` mirror the seed migration for parity; **`/` and `/admin` read/write live database rows.**
+PostgreSQL-backed City Admin CRUD (`/admin`) with **multi-city scope** (HTTP-only `admin_city_id` cookie + DB-backed selector), Greenville default dashboard (`/`), **multi-city read** route (`/city/[slug]`, e.g. `/city/riverside` after migration 003), and `POST /api/import-action` for **review-before-save** LLM ingestion. Optional **`/admin/login`** + **`/admin/logout`** set/clear `admin_demo` when `ADMIN_DEMO_SECRET` is configured. Fixtures in `src/lib/sample-data.ts` mirror the Greenville seed for parity; **`/`, `/city/...`, and `/admin` read/write live database rows**.
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ Edit only if you changed Postgres ports/credentials in `docker-compose.yml` or n
 | -------- | ------- |
 | `DATABASE_URL` | Postgres connection (see `.env.example`) |
 | `OLLAMA_*`, `LLM_*`, `GEMINI_*` | Server-only import pipeline |
-| `ADMIN_DEMO_SECRET` | Optional: when set, Server Actions require cookie `admin_demo` to match (demo OAuth/session hook) |
+| `ADMIN_DEMO_SECRET` | Optional: when set, `/admin` shows a **login gate** until sign-in via **`/admin/login`** sets HTTP-only **`admin_demo`** (or use `Authorization: Bearer <secret>` from API/tooling). Cleared via **`GET /admin/logout`**. JWT peek helper: `src/lib/admin-jwt-peek.ts`. |
 
 ## Database (Docker Postgres)
 
@@ -46,7 +46,7 @@ npm run db:migrate
 npm run db:check
 ```
 
-Expect `ok: true` and six Greenville actions after seed. Extended operator smoke (counts + sample `curl` for import):
+Expect `ok: true`: Greenville baseline (1 city, 6 actions), slug **`greenville`**, plus seeded **Riverside** (`riverside`, 2 actions) after **`003_city_slugs_and_riverside_seed.sql`**. Extended operator smoke (counts + sample `curl` for import):
 
 ```bash
 npm run db:smoke
@@ -72,7 +72,8 @@ Open:
 | Route | Role |
 | ----- | ---- |
 | [http://localhost:3000](http://localhost:3000) | Public viewer |
-| [http://localhost:3000/admin](http://localhost:3000/admin) | City Admin (CRUD + import review) |
+| [http://localhost:3000/admin](http://localhost:3000/admin) | City Admin (CRUD + import review; city selector) |
+| [http://localhost:3000/admin/login](http://localhost:3000/admin/login) | Demo secret sign-in (only when `ADMIN_DEMO_SECRET` is set) |
 
 Routes are `force-dynamic`. Without `DATABASE_URL` you will see onboarding cards instead of the dashboard.
 
@@ -101,7 +102,7 @@ npm test
 
 ## Testing notes
 
-- **Unit:** `src/lib/*.test.ts` — calculations, sorting whitelist, Zod schemas, PDF LED golden fixture.
+- **Unit:** `src/lib/*.test.ts` — calculations, sorting whitelist, Zod schemas, PDF LED golden fixture, **admin city cookie helpers** (`admin-city-context.test.ts`).
 - **Integration-style:** `src/app/api/import-action/route.integration.test.ts` — mocks `@/server/llm` so CI does not need Docker Ollama or Postgres.
 - **Manual E2E:** `docs/MANUAL_TEST_CHECKLIST.md` (browser → API → DB).
 
@@ -112,7 +113,7 @@ npm test
 | `DATABASE_URL` / DB onboarding | Copy `.env.example` → `.env.local`; `docker compose ps` healthy; run `npm run db:migrate` |
 | Connection refused to Postgres | Port 5432 not published or wrong host in `DATABASE_URL` |
 | Import always fails | Ollama not running or model not pulled; or enable Gemini fallback per `.env.example` |
-| Optional admin cookie lock | If `ADMIN_DEMO_SECRET` is set, set browser cookie `admin_demo` to the same value before mutations |
+| Optional admin gate | With `ADMIN_DEMO_SECRET`, open **`/admin/login`**, submit the secret, or attach `Authorization: Bearer …` for scripted mutations. Log out via **`/admin/logout`**. |
 | `npm test` missing | Run `npm install` (adds `vitest`, `vite`, `@vitest/coverage-v8`) |
 
 ## Assessment deliverables
@@ -129,4 +130,4 @@ npm test
 
 ## Deferred / stretch
 
-See `docs/TODO.md` — multi-city switching, full OAuth provider, extra chart polish beyond the Sprint 5 SVG trajectory.
+See `docs/TODO.md` — production OAuth/JWKS verification, extra chart polish beyond the Sprint 5 SVG trajectory.
