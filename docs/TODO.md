@@ -61,13 +61,21 @@ Definition of done:
 
 Target duration: 30 minutes
 
-- [ ] Define Zod schema for imported climate actions.
-- [ ] Implement server-only free-text import flow.
-- [ ] Try Ollama first.
-- [ ] Validate structured JSON output.
-- [ ] Add bounded repair retry.
-- [ ] Add optional Gemini fallback behind an explicit environment flag.
-- [ ] Include the PDF example text as a test fixture.
+Status: Complete — operator sanity: `npm run build` OK; `ƒ /api/import-action` + `src/server/llm.ts` + PDF LED fixture; optional Ollama smoke still recommended.
+
+Phase 3 (implementation):
+
+- Started: Monday, May 18, 2026, ~3:05 PM UTC-3
+- Completed: Monday, May 18, 2026, ~3:30 PM UTC-3
+- Elapsed: approximately 25 minutes
+
+- [x] Define Zod schema for imported climate actions.
+- [x] Implement server-only free-text import flow.
+- [x] Try Ollama first.
+- [x] Validate structured JSON output.
+- [x] Add bounded repair retry.
+- [x] Add optional Gemini fallback behind an explicit environment flag.
+- [x] Include the PDF example text as a test fixture.
 
 Definition of done:
 

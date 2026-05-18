@@ -4,9 +4,11 @@ Start Time: Saturday, May 16, 2026, 11:15 AM UTC-3
 
 ## Current State
 
-**Phase 1 (Sprint 1) and Phase 2 (Sprint 2) are complete and operator-verified.**
+**Phase 1 (Sprint 1), Phase 2 (Sprint 2), and Phase 3 (Sprint 3) are implemented; Sprints 1–2 were operator-verified earlier.**
 
 The repository has the Next.js shell with Open Earth tokens, Greenville fixtures on `/` and `/admin`, and a **PostgreSQL layer** via Docker Compose, SQL migrations (`cities`, `climate_actions`), Greenville seed, `src/server/db.ts`, `src/lib/sorting.ts`, and README workflow. **`/` and `/admin` remain fixture-backed** until a later sprint reads from Postgres.
+
+**Sprint 3:** `src/server/llm.ts` calls **Ollama** (`/api/chat`, JSON mode), validates with **`climateActionSchema`**, runs **one repair pass** on Zod failure, and optionally uses **Gemini** when `ENABLE_CLOUD_FALLBACK` is explicitly enabled (and `LLM_INFERENCE_MODE=platform` forces cloud-only). **`POST /api/import-action`** returns `{ ok, action?, errors? }` with **no persistence**. The assessment **LED street lighting** paragraph lives in **`src/lib/pdf-led-import-fixture.ts`** with the **PDF-documented golden object** (`9500` tCO₂/yr, `energy`, `planned`, `2027`).
 
 ## Alignment with assessment (PDF / notes) through Phase 2
 
@@ -55,6 +57,9 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **Sprint 2**: Declared `serverExternalPackages: ["pg"]` in `next.config.ts`.
 - **Sprint 2**: Dependencies `pg`, `server-only`; devDependencies `@types/pg`, `dotenv`.
 - **Sprint 2**: `.env.example`-documents `DATABASE_URL` and Compose-related vars (development placeholders only).
+- **Sprint 3**: Added **`src/server/llm.ts`** (Ollama-first import + bounded Zod repair + optional Gemini behind `ENABLE_CLOUD_FALLBACK`), **`src/app/api/import-action/route.ts`**, **`src/lib/pdf-led-import-fixture.ts`** (PDF LED paragraph + golden `ClimateAction`), and expanded **`.env.example`** with LLM variables per `docs/DEVELOPER_PROFILE.md`.
+- **`next.config.ts`**: **`htmlLimitedBots: /.*/`** to avoid Next 16 streaming-metadata wrapper drift (SSR vs client hid `Suspense` boundary) causing **hydration mismatch warnings** in dev for `MetadataWrapper` / `<__next_metadata_boundary__>` (no app-route code changed).
+- **`src/server/llm.ts`**: Ollama **`/api/chat`** body sets **`think: false`** so thinking-capable models (default **`qwen3.5`** in `.env.example`) put structured output in **`message.content`** instead of timing out / returning empty **`content`** while filling **`thinking`**.
 
 ## Verified
 
@@ -72,10 +77,12 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Route smoke checks returned `200` for `/` and `/admin` after the Tailwind correction.
 - **Sprint 2 (agent + operator)**: `npm run build` succeeds with current dependencies; **operator completed** the manual checklist (Docker Compose, `npm run db:migrate`, `npm run db:check`, build, route smoke). **Agent re-ran `npm run build` after doc updates — exit code 0** (Next.js 16.2.6).
 - **Phase 2 vs PDF (via `docs/assessment-notes.md`)**: city and action field sets, enum values, and Greenville numbers match fixture + SQL seed; phased deferrals (LLM, full CRUD to DB, etc.) match the sprint plan.
+- **Sprint 3 (agent + operator sanity)**: `npm run build` succeeds; route table includes **`ƒ /api/import-action`**. Operator sanity pass recorded **Monday, May 18, 2026** (build + route presence). **Optional**: Ollama running, **`OLLAMA_MODEL`** pulled, `POST /api/import-action` with LED text from **`src/lib/pdf-led-import-fixture.ts`** → **`action`** aligns with **`PDF_LED_STREET_LIGHTING_EXPECTED_ACTION`** (same numeric and enum fields; title ideally `"LED street lighting conversion"`).
+- **`npm run build`** succeeds after **`htmlLimitedBots`** config change (**Next.js 16.2.6**); operator should confirm **dev** console is clean or report if mismatch persists (extensions / Turbopack can still interfere).
 
 ## Next
 
-- Sprint 3: local-first LLM orchestration (`src/server/llm.ts`), structured import parsing, bounded repair retry, optional Gemini fallback behind explicit env flags.
+- Sprint 4: Admin CRUD / review-before-save import UI, public viewer depth, charts as scoped.
 
 ## Operator-Owned Actions
 
@@ -92,3 +99,6 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Sprint 2 implementation started around Saturday, May 16, 2026, ~4:25 PM UTC-3.
 - Phase 2 / Sprint 2 completed Saturday, May 16, 2026, ~4:48 PM UTC-3 (operator sign-off after checklist).
 - Phase 2 elapsed from implementation start to operator sign-off: approximately 23 minutes.
+- Sprint 3 implementation started Monday, May 18, 2026, ~3:05 PM UTC-3.
+- Phase 3 / Sprint 3 completed Monday, May 18, 2026, ~3:30 PM UTC-3 (implementation through operator sanity: `npm run build`, import route present).
+- Phase 3 elapsed from implementation start through sign-off: approximately 25 minutes.

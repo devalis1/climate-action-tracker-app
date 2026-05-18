@@ -4,6 +4,7 @@
 
 - **Phase 1 / Sprint 1** is complete and verified against the assessment scope.
 - **Phase 2 / Sprint 2** is **complete and operator-verified**: Docker Postgres, migrations, Greenville seed, `db:check`, and `npm run build` all passed on the operator machine; UI smoke for `/` and `/admin` OK.
+- **Phase 3 / Sprint 3 complete (operator sanity)**: `src/server/llm.ts` (Ollama + Zod + one repair pass + optional Gemini; **`think: false`** for Qwen-style thinking models), `POST /api/import-action`, `src/lib/pdf-led-import-fixture.ts`, `.env.example` LLM vars. Sign-off: **`npm run build`** OK **Monday, May 18, 2026**; optional Ollama smoke still adds confidence.
 - Repository exists and has initial project guidance for the OEF City Climate Action Tracker Exercise.
 - `docs/OEF AI-Native Software Engineer Exercise.pdf` is the source-of-truth assessment document.
 - `docs/assessment-notes.md` summarizes the assessment plus personal implementation notes.
@@ -12,7 +13,7 @@
 - `docs/PROJECT_STRUCTURE.md` documents the lean repo structure.
 - `.cursorrules` defines project-specific agent rules, including no `git commit` / `git push`.
 - `docs/TODO.md` breaks the work into 30-minute sprints.
-- `docs/PROGRESS.md` tracks what is done and what is next (includes a **Phase 2 vs PDF/notes alignment** table through Sprint 2).
+- `docs/PROGRESS.md` tracks what is done and what is next (includes PDF alignment through Phase 2 and Sprint 3 LLM notes in **Current State**).
 - Structure targets Next.js, TypeScript, PostgreSQL, and local-first Ollama with optional Gemini fallback.
 - Sprint 1 is implemented as a root-level Next.js App Router app.
 - Tailwind CSS is configured with Open Earth / CityCatalyst brand tokens from `docs/DESIGN_SYSTEM.md`; `src/app/globals.css` uses Tailwind v4’s `@import "tailwindcss"` and `@config` so the JS config (including `brand-*` colors and spacing scale) is actually applied.
@@ -28,16 +29,16 @@
 - **Phase 2 / Sprint 2**: `src/server/db.ts` exposes server-only typed reads (`getCityById`, `getCityByName`, offset listings, keyset helper for default `start_year` ordering).
 - **Phase 2 / Sprint 2**: `src/lib/sorting.ts` maps sort keys to safe SQL `ORDER BY` fragments for future filtering/sorting routes.
 - **Phase 2 / Sprint 2**: `.env.example` documents `DATABASE_URL` (localhost → Docker Postgres) and Compose-related vars (development placeholders).
+- **Phase 3 / Sprint 3**: `.env.example` also documents `LLM_INFERENCE_MODE`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `LLM_REQUEST_TIMEOUT_MS`, `ENABLE_CLOUD_FALLBACK`, `GEMINI_API_KEY`, `GEMINI_MODEL` (names and safe defaults only).
 - `README.md` documents Docker Desktop prerequisite, `.env.local` copy, Compose up/down, migrations, db check, and `npm run dev` workflow.
 
 ## Planned
 
-- Add local-first LLM orchestration under `src/server/llm.ts` (Sprint 3).
-- Wire City Admin CRUD/import workflows and optionally swap `/` + `/admin` data sources from fixtures to Postgres.
-- Replace the placeholder on-track helper with a Sprint 4 emissions projection.
-- Write the one-page AI workflow response required by the PDF.
+- **Sprint 4**: Postgres-backed admin CRUD + free-text import **review-before-save**, public viewer from same data, real on-track/progression logic, optional projected-emissions chart.
+- Write the one-page AI workflow response required by the PDF (Sprint 5).
 
 ## Operator Actions
 
 - Run your own **test pass** and **commit/push** when satisfied.
-- Proceed to **Sprint 3** when ready (LLM import path).
+- **Optional (LLM)**: Ollama + `POST /api/import-action` with **`PDF_LED_STREET_LIGHTING_PARAGRAPH`** (`src/lib/pdf-led-import-fixture.ts`).
+- Proceed to **Sprint 4** (hand off using the Phase 4 agent prompt).
