@@ -86,3 +86,35 @@ export function isOnTrack(
   );
   return summedAnnualReduction + 1e-6 >= demanded;
 }
+
+/**
+ * Idealized trajectory of remaining annual emissions if the city linearly phases out
+ * the inventoried baseline from glideStartYear through targetYear (0 at net-zero year).
+ * Years before glideStartYear are modeled at full baseline; after targetYear as zero.
+ */
+export function projectedAnnualEmissionsTonsForYear(
+  baselineAnnualEmissions: number,
+  glideStartYear: number,
+  targetYear: number,
+  year: number,
+): number {
+  if (baselineAnnualEmissions <= 0) {
+    return 0;
+  }
+
+  if (targetYear <= glideStartYear) {
+    return year >= targetYear ? 0 : baselineAnnualEmissions;
+  }
+
+  if (year <= glideStartYear) {
+    return baselineAnnualEmissions;
+  }
+  if (year >= targetYear) {
+    return 0;
+  }
+
+  const spanYears = targetYear - glideStartYear;
+  const elapsed = year - glideStartYear;
+  const fraction = elapsed / spanYears;
+  return baselineAnnualEmissions * (1 - clampFraction(fraction));
+}

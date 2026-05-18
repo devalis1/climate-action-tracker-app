@@ -2,6 +2,7 @@ import {
   DashboardSummary,
   TrackStatusPanel,
 } from "@/components/dashboard-summary";
+import { EmissionsTrajectoryChart } from "@/components/emissions-trajectory-chart";
 import { SectorBreakdown } from "@/components/sector-breakdown";
 import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
 import { cityAndClimateRowsToCityProfile } from "@/lib/profile-map";
@@ -125,6 +126,8 @@ export default async function PublicViewerPage() {
           </div>
 
           <DashboardSummary profile={profile} />
+
+          <EmissionsTrajectoryChart profile={profile} />
 
           <div className="mt-10 flex flex-col gap-8 lg:mt-12 lg:grid lg:grid-cols-12 lg:items-start lg:gap-10">
             <div className="order-2 lg:order-1 lg:col-span-8">

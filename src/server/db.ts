@@ -358,11 +358,3 @@ export async function deleteClimateAction(input: {
   });
 }
 
-/** Optional extension point — verify admin session/JWT/OAuth claims before mutations. */
-export function assertDemoAdminWritesAllowed(): void {
-  /*
-   * TODO(Sprint 5+): Gate writes behind real auth (sessions, JWT, OAuth) — not enforced in Sprint 4
-   * so reviewers can demo CRUD/import without onboarding into an IdP during the timed exercise.
-   */
-  void 0;
-}

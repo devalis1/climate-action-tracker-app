@@ -1,73 +1,65 @@
 # City Climate Action Tracker
 
-PostgreSQL-backed City Admin CRUD (`/admin`), public Greenville dashboard (`/`), and Sprint 3 `POST /api/import-action` for **review-before-save** ingestion. Fixtures in `src/lib/sample-data.ts` remain for parity checks against the seeded SQL baseline but **`/` and `/admin` prefer live database rows.**
+PostgreSQL-backed City Admin CRUD (`/admin`), public Greenville dashboard (`/`), and `POST /api/import-action` for **review-before-save** LLM ingestion. Fixtures in `src/lib/sample-data.ts` mirror the seed migration for parity; **`/` and `/admin` read/write live database rows.**
 
 ## Prerequisites
 
-- **Docker Desktop** (for local PostgreSQL)
-- Node.js 20 or newer
+- Docker Desktop (local PostgreSQL)
+- Node.js 20+
 - npm
+- Optional: [Ollama](https://ollama.com/) on the host for local-first import (`OLLAMA_*` in `.env.example`)
 
 ## One-time setup
 
-1. Install JS dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Copy environment template:
+2. Environment:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Adjust values only if you changed Postgres credentials or ports in `docker-compose.yml`.
+Edit only if you changed Postgres ports/credentials in `docker-compose.yml` or need LLM/cloud toggles. **Never commit `.env.local`.**
+
+| Variable | Purpose |
+| -------- | ------- |
+| `DATABASE_URL` | Postgres connection (see `.env.example`) |
+| `OLLAMA_*`, `LLM_*`, `GEMINI_*` | Server-only import pipeline |
+| `ADMIN_DEMO_SECRET` | Optional: when set, Server Actions require cookie `admin_demo` to match (demo OAuth/session hook) |
 
 ## Database (Docker Postgres)
 
-Start Postgres (detached):
+Start Postgres:
 
 ```bash
 docker compose up -d
 ```
 
-Wait until healthy (`docker compose ps` shows healthy), then apply migrations from the **host** (requires `DATABASE_URL` in `.env.local`):
+Wait until healthy, then from the **host**:
 
 ```bash
 npm run db:migrate
-```
-
-Verify Greenville seed (`greenvilleCityRows: 1`, `greenvilleActionRows: 6`, `ok: true`):
-
-```bash
 npm run db:check
 ```
 
-Optional manual inspection:
+Expect `ok: true` and six Greenville actions after seed. Extended operator smoke (counts + sample `curl` for import):
 
 ```bash
-docker compose exec postgres psql -U climate -d climate_action_tracker -c "SELECT COUNT(*) FROM climate_actions;"
+npm run db:smoke
 ```
 
-Stop containers (data persists in the named volume unless you remove it):
-
-```bash
-docker compose down
-```
-
-Remove data volume intentionally (destructive):
-
-```bash
-docker compose down -v
-```
+Stop / reset is documented under **Troubleshooting** below.
 
 ### Connection strings
 
 | Where the app runs | Postgres host |
 | ------------------ | ------------- |
 | `npm run dev` on your machine | `localhost` |
-| Future Compose service next to DB | `postgres` (Compose service name) |
+| A future Compose app service | `postgres` (service name) |
 
 ## Application
 
@@ -77,34 +69,64 @@ npm run dev
 
 Open:
 
-- Public Viewer (Postgres aggregates): [http://localhost:3000](http://localhost:3000)
-- City Admin (Postgres mutations + reviewed import pipeline): [http://localhost:3000/admin](http://localhost:3000/admin)
+| Route | Role |
+| ----- | ---- |
+| [http://localhost:3000](http://localhost:3000) | Public viewer |
+| [http://localhost:3000/admin](http://localhost:3000/admin) | City Admin (CRUD + import review) |
 
-> **Reminder:** Routes are `force-dynamic`; without `DATABASE_URL` or a reachable DB you’ll see onboarding cards instead of the dashboard. Optionally run **Ollama** when exercising free-text admin import (`OLLAMA_*` vars in `.env.example`).
+Routes are `force-dynamic`. Without `DATABASE_URL` you will see onboarding cards instead of the dashboard.
 
-## Scripts
+## Build & quality
+
+`tsconfig.json` **excludes** `*.test.ts` / `vitest.config.ts` so **`npm run build`** does not require Vitest packages to be present; **Vitest still type-checks tests** when you run **`npm test`** after **`npm install`**.
+
+```bash
+npm run build        # production build
+npm test             # Vitest (unit + mocked import route; no live Ollama/Postgres required)
+npm run test:watch   # Vitest watch mode
+npm run test:coverage # Vitest + v8 coverage (requires devDependencies installed)
+```
+
+## Scripts reference
 
 ```bash
 npm run dev
 npm run build
 npm run start
-npm run db:migrate   # applies migrations/*.sql once each (tracks schema_migrations)
-npm run db:check     # Greenville row-count sanity check
+npm run db:migrate   # applies migrations/*.sql once each (schema_migrations)
+npm run db:check     # Greenville row-count sanity
+npm run db:smoke     # db:check + prints optional import API curl
+npm test
 ```
 
-## Phase 2 baseline
+## Testing notes
 
-- Docker Compose Postgres (`postgres:16-alpine`), persistent volume, healthcheck.
-- Schema + indexes + scaling/partitioning commentary in `migrations/001_initial_schema.sql`.
-- Greenville seed in `migrations/002_seed_greenville.sql`.
-- `src/server/db.ts` typed helpers (reads + Sprint 4 mutations).
-- `src/lib/sorting.ts` whitelist mapping for SQL `ORDER BY`.
+- **Unit:** `src/lib/*.test.ts` — calculations, sorting whitelist, Zod schemas, PDF LED golden fixture.
+- **Integration-style:** `src/app/api/import-action/route.integration.test.ts` — mocks `@/server/llm` so CI does not need Docker Ollama or Postgres.
+- **Manual E2E:** `docs/MANUAL_TEST_CHECKLIST.md` (browser → API → DB).
 
-## Deferred / Stretch
+## Troubleshooting
 
-Full multi-city switching, hardened OAuth-backed admin guards, richer charts/tests — see Sprint 5 / stretch checklist in `docs/TODO.md`.
+| Symptom | What to check |
+| ------- | ---------------- |
+| `DATABASE_URL` / DB onboarding | Copy `.env.example` → `.env.local`; `docker compose ps` healthy; run `npm run db:migrate` |
+| Connection refused to Postgres | Port 5432 not published or wrong host in `DATABASE_URL` |
+| Import always fails | Ollama not running or model not pulled; or enable Gemini fallback per `.env.example` |
+| Optional admin cookie lock | If `ADMIN_DEMO_SECRET` is set, set browser cookie `admin_demo` to the same value before mutations |
+| `npm test` missing | Run `npm install` (adds `vitest`, `vite`, `@vitest/coverage-v8`) |
 
-## Sprint 3 (LLM import) reminder
+## Assessment deliverables
 
-Configured via `.env.example`: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `LLM_INFERENCE_MODE`, `ENABLE_CLOUD_FALLBACK`, `GEMINI_API_KEY`, optional timeouts. Inference stays **server-only**; `/admin` parses text through `POST /api/import-action`, then persists only after manual confirmation.
+- Source of truth: `docs/OEF AI-Native Software Engineer Exercise.pdf`
+- AI workflow write-up (four PDF questions): `docs/AI_WORKFLOW_RESPONSE.md`
+- Manual checklist: `docs/MANUAL_TEST_CHECKLIST.md`
 
+## Stack (summary)
+
+- Next.js App Router, React, TypeScript, PostgreSQL, Zod
+- Ollama-first import with optional Gemini fallback (`src/server/llm.ts`)
+- Open Earth styling: `docs/DESIGN_SYSTEM.md`
+
+## Deferred / stretch
+
+See `docs/TODO.md` — multi-city switching, full OAuth provider, extra chart polish beyond the Sprint 5 SVG trajectory.

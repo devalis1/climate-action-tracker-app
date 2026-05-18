@@ -1,6 +1,9 @@
 # Dependencies
 node_modules
 
+# Test coverage (Vitest HTML + v8 output)
+coverage
+
 # Next.js
 .next
 out

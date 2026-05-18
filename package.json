@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "node scripts/run-migrations.mjs",
-    "db:check": "node scripts/db-check.mjs"
+    "db:check": "node scripts/db-check.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "db:smoke": "node scripts/db-smoke.mjs"
   },
   "dependencies": {
     "next": "latest",
@@ -20,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "@types/pg": "^8.15.5",
     "@types/node": "latest",
     "@types/react": "latest",
@@ -28,6 +33,8 @@
     "autoprefixer": "latest",
     "postcss": "latest",
     "tailwindcss": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   }
 }

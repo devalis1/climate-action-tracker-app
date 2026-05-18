@@ -4,11 +4,9 @@ Start Time: Saturday, May 16, 2026, 11:15 AM UTC-3
 
 ## Current State
 
-**Phase 1 (Sprint 1), Phase 2 (Sprint 2), Phase 3 (Sprint 3), and Phase 4 (Sprint 4)** are implemented in code; **Phase 4 / Sprint 4** reached **operator sign-off Monday, May 18, 2026** after manual UI + Postgres verification (Compose, **`/` + `/admin`**, CRUD, reviewed import)—see **Timing** below.
+**Phase 1–4** remain as shipped earlier; **Phase 5 / Sprint 5** adds **Vitest** (`vitest.config.ts`, `npm test`), **unit tests** under `src/lib/*.test.ts`, **mocked `POST /api/import-action` integration test** (`src/app/api/import-action/route.integration.test.ts`), **`docs/AI_WORKFLOW_RESPONSE.md`** (answers all **four** PDF workflow questions), **`docs/MANUAL_TEST_CHECKLIST.md`**, **`npm run db:smoke`**, README refresh, and a **stretch SVG trajectory chart** on **`/`** (`src/components/emissions-trajectory-chart.tsx` + `projectedAnnualEmissionsTonsForYear` in `src/lib/calculations.ts`). **Admin guard:** optional **`ADMIN_DEMO_SECRET`** + cookie **`admin_demo`** via **`src/server/admin-auth.ts`** (OAuth/JWT extension point); default remains open for demos.
 
-**Phase 4 (Sprint 4)** wires **`/` + `/admin` to Postgres** (Greenville demo name), ships **baseline/target edits**, **`climate_actions` CRUD** via Server Actions backed by **`src/server/db.ts` mutations**, **`POST /api/import-action` + Zod-reviewed UI** (`src/components/admin-workspace.tsx`), and replaces **`isOnTrack`** with a **linear glide heuristic** anchored on earliest modeled action (`src/lib/calculations.ts`). Admin auth remains a **`assertDemoAdminWritesAllowed` stub** documenting OAuth/JWT follow-up (`src/server/db.ts`). Charts remain stretch (not shipped).
-
-**Sprint 3:** `src/server/llm.ts` calls **Ollama** (`/api/chat`, JSON mode), validates with **`climateActionSchema`**, runs **one repair pass** on Zod failure, and optionally uses **Gemini** when `ENABLE_CLOUD_FALLBACK` is explicitly enabled (and `LLM_INFERENCE_MODE=platform` forces cloud-only). **`POST /api/import-action`** returns `{ ok, action?, errors? }` **without automatically writing to Postgres**. **Sprint 4 `/admin`** layers **review-before-save** confirmations on top (`src/app/admin/actions.ts`). The assessment **LED street lighting** paragraph lives in **`src/lib/pdf-led-import-fixture.ts`** with the **PDF-documented golden object** (`9500` tCO₂/yr, `energy`, `planned`, `2027`).
+**Sprint 3 (unchanged):** `src/server/llm.ts` — Ollama, Zod, repair retry, optional Gemini, server-only keys. **`POST /api/import-action`** remains parse-only until `/admin` saves.
 
 ## Alignment with assessment (PDF / notes) through Phase 2
 
@@ -62,6 +60,7 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **`src/server/llm.ts`**: Ollama **`/api/chat`** body sets **`think: false`** so thinking-capable models (default **`qwen3.5`** in `.env.example`) put structured output in **`message.content`** instead of timing out / returning empty **`content`** while filling **`thinking`**.
 - **Sprint 4**: Expanded **`src/server/db.ts`** mutations + **`src/lib/admin-mutation-schemas.ts`**, Greenville demo constant (`src/lib/demo-city.ts`), profile mappers (`src/lib/profile-map.ts`), **`AdminWorkspace`** client UX, onboarding fallbacks when `DATABASE_URL` is absent, deterministic **`calculations.ts`** glide heuristic, `README.md` refresh for Postgres-first workflow.
 - **Sprint 4 follow-up**: **`createClimateActionMutationSchema` / `updateClimateActionMutationSchema`** coerce **`annualReduction`** and **`startYear`** from string form values (`z.coerce.number`) so **Save to Postgres** from the composer accepts normal HTML inputs without Zod **`expected number, received string`** failures.
+- **Sprint 5**: Vitest + **`npm test`** / **`test:watch`** / **`test:coverage`**; unit tests for **`src/lib/calculations.ts`**, **`src/lib/sorting.ts`**, **`src/lib/schemas.ts`**, **`src/lib/pdf-led-import-fixture.ts`**; **integration-style** mocked **`POST /api/import-action`** test; **`scripts/db-smoke.mjs`** + **`npm run db:smoke`**; **`docs/AI_WORKFLOW_RESPONSE.md`**, **`docs/MANUAL_TEST_CHECKLIST.md`**, README overhaul; **`EmissionsTrajectoryChart`** on **`/`**; **`src/server/admin-auth.ts`** optional cookie gate; removed inert **`assertDemoAdminWritesAllowed` stub** from **`src/server/db.ts`**.
 
 ## Verified
 
@@ -83,17 +82,32 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **`npm run build`** succeeds after **`htmlLimitedBots`** config change (**Next.js 16.2.6**); operator should confirm **dev** console is clean or report if mismatch persists (extensions / Turbopack can still interfere).
 - **`npm run build`** (Monday, May 18, 2026) after Sprint 4 edits — TypeScript passes; **`ƒ /`**, **`ƒ /admin`**, **`ƒ /api/import-action`** in route manifest.
 - **Operator-manual Sprint 4 QA** (Compose + Postgres + browser): verifies **`/`** aggregates + **`/admin`** baseline/target save, **`climate_actions`** CRUD, and import **review-before-save → persist** aligns with seeded Greenville data after cleanup.
-- **Repository sanity** (Monday, May 18, 2026, close-out): **`npm run build`** exit code **0** (Next.js 16.2.6); **`npm run db:check`** **`ok: true`** (six Greenville actions). **Integration tests**: no `npm test` / Vitest / Playwright script in **`package.json` yet (**`npm test`** exits *Missing script*); Sprint 5.
+- **Repository sanity** (after operator fixed npm registry): **`npm test`** — **32 tests passed** (Vitest 3.2.4); **`npm run build`** — **exit 0** (Next.js 16.2.6); **`npm run db:check`** / **`npm run db:smoke`** — **`ok: true`** (Greenville 1 city / 6 actions); **`npm run test:coverage`** — **exit 0**.
+- **Final pre-commit sanity (re-run):** **`npm test`** — **32 passed**; **`npm run build`** — **success**; **`npm run db:check`** — **`ok: true`** — immediately before operator commit.
+- **Still optional before Q&A demo:** walk **`docs/MANUAL_TEST_CHECKLIST.md`** in the browser (especially **`/admin`** import with live Ollama/Gemini if demonstrating LLM).
+- **Browser sanity (Phase 5 agent):** Lightweight check — **`curl http://localhost:3000/` → `200`** (existing local **Next dev** on port 3000). Full UI pass (KPI strip, trajectory chart, `/admin` CRUD + import) remains **operator** via **`docs/MANUAL_TEST_CHECKLIST.md`** (MCP browser not invoked here).
 
 ## Next
 
-- Sprint 5: Vitest/unit coverage, richer manual test notes for DB/LLM, assessment write-up polish.
+- Submission / GitHub zip: working tree ready after operator **commit + push**; optional browser + LLM demo per **`docs/MANUAL_TEST_CHECKLIST.md`**.
 
 ## Operator-Owned Actions
 
-- Run any additional **tests** you want before pushing.
-- **Commit and push manually** when ready; agents must not run `git commit` or `git push`.
-- Handle all commits and pushes manually.
+- **Commit and push** this Phase 5 / test-completion batch when satisfied (agents do not run `git commit` / `git push`).
+- Optional: archive **`coverage/`** is gitignored; do not commit coverage HTML unless you explicitly want it in the repo.
+
+## Final sanity matrix (Phase 5)
+
+| Area | PDF requirement | Code / docs evidence |
+| ---- | ---------------- | -------------------- |
+| City Admin | Baseline, target, CRUD, LLM import review-before-save | `/admin` + `src/app/admin/actions.ts` + `admin-workspace.tsx`; import via `POST /api/import-action` + Zod review |
+| Public Viewer | Actions, progress, sectors, on-track | `/` + `src/lib/calculations.ts` + dashboard components |
+| Stack | Next, TS, Postgres, Ollama (+ optional Gemini); keys server-only | `package.json`, `src/server/llm.ts`, `.env.example` |
+| Scale story | Indexes, sort/pagination commentary | `migrations/001_initial_schema.sql`, `src/server/db.ts`, `src/lib/sorting.ts` |
+| Tests | Unit + integration posture | `vitest.config.ts`, `src/lib/*.test.ts`, `route.integration.test.ts`, `docs/MANUAL_TEST_CHECKLIST.md` |
+| Design | Open Earth aesthetic | `docs/DESIGN_SYSTEM.md`, Tailwind brand tokens, trajectory chart palette |
+
+**Intentional gaps vs PDF:** no full multi-city admin UX (Greenville demo only; `city_id` in schema); no production OAuth IdP — optional `ADMIN_DEMO_SECRET` cookie sketch only.
 
 ## Timing
 
@@ -110,3 +124,6 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Sprint 4 implementation started Monday, May 18, 2026, ~3:32 PM UTC-3.
 - Phase 4 / Sprint 4 completed Monday, May 18, 2026, ~4:00 PM UTC-3 (implementation through operator sanity: Postgres-backed `/` and `/admin`, `npm run build`, `npm run db:check`).
 - Phase 4 elapsed from implementation start through sign-off: approximately 28 minutes.
+- Sprint 5 implementation started Monday, May 18, 2026, ~4:10 PM UTC-3.
+- Phase 5 / Sprint 5 completed Monday, May 18, 2026, ~4:45 PM UTC-3 (agent: tests/docs/chart/guard); post–npm-fix verification: **`npm test`** + **`npm run build`** + DB smoke green.
+- Phase 5 elapsed from implementation start through agent hand-off: approximately 35 minutes.

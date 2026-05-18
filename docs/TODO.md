@@ -101,7 +101,7 @@ Phase 4 (implementation):
 - [x] Show total estimated reductions vs baseline.
 - [x] Show sector breakdown.
 - [x] Show on-track/not-on-track state.
-- [ ] Add projected emissions chart if time allows. — stretch not completed
+- [x] Add projected emissions chart if time allows. — delivered Sprint 5 (`EmissionsTrajectoryChart` on `/`).
 
 Definition of done:
 
@@ -113,13 +113,21 @@ Definition of done:
 
 Target duration: 30 minutes
 
-- [ ] Unit-test progress calculations.
-- [ ] Unit-test action sorting/filtering helpers.
-- [ ] Unit-test free-text import schema parsing.
-- [ ] Add at least one integration-style test or documented manual test for database/LLM boundary.
-- [ ] Write `README.md` with build/run instructions.
-- [ ] Write the one-page AI workflow response required by the PDF.
-- [ ] Update `docs/PROGRESS.md` and `docs/status/current.md`.
+Status: Complete — agent: tests + docs + chart + README (operator: `npm install` if lockfile not yet updated, then `npm test` / browser QA).
+
+Phase 5 (implementation):
+
+- Started: Monday, May 18, 2026, ~4:10 PM UTC-3
+- Completed: Monday, May 18, 2026, ~4:45 PM UTC-3
+- Elapsed: approximately 35 minutes
+
+- [x] Unit-test progress calculations.
+- [x] Unit-test action sorting/filtering helpers.
+- [x] Unit-test free-text import schema parsing.
+- [x] Add at least one integration-style test or documented manual test for database/LLM boundary.
+- [x] Write `README.md` with build/run instructions.
+- [x] Write the one-page AI workflow response required by the PDF.
+- [x] Update `docs/PROGRESS.md` and `docs/status/current.md`.
 
 Definition of done:
 
@@ -129,8 +137,8 @@ Definition of done:
 
 ## Stretch Goals
 
-- [ ] Projected emissions chart.
+- [x] Projected emissions chart (SVG trajectory on `/`, Open Earth palette — no extra chart library).
 - [x] PostgreSQL persistence fully wired into app routes/server actions.
-- [ ] Multiple city management.
-- [ ] Admin authentication with OAuth/JWT-compatible architecture.
+- [ ] Multiple city management — deferred: Greenville remains primary; extension via `city_id` + routing noted in migrations/db helpers.
+- [ ] Admin authentication with OAuth/JWT-compatible architecture — partial: optional `ADMIN_DEMO_SECRET` + `admin_demo` cookie gate in `src/server/admin-auth.ts` for session-token/OAuth claim mapping later.
 

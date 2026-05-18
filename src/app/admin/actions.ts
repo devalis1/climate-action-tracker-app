@@ -9,8 +9,8 @@ import {
   updateClimateActionMutationSchema,
 } from "@/lib/admin-mutation-schemas";
 import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
+import { assertDemoAdminWritesAllowed } from "@/server/admin-auth";
 import {
-  assertDemoAdminWritesAllowed,
   DbConfigurationError,
   deleteClimateAction,
   getCityByName,
@@ -50,7 +50,7 @@ async function greenvilleDemoCityId(): Promise<number> {
 }
 
 export async function saveCityBaselineAndTarget(input: unknown): Promise<MutationResult> {
-  assertDemoAdminWritesAllowed();
+  await assertDemoAdminWritesAllowed();
   const parsed = updateCityBaselineMutationSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -79,7 +79,7 @@ export async function saveCityBaselineAndTarget(input: unknown): Promise<Mutatio
 }
 
 export async function saveNewClimateAction(input: unknown): Promise<MutationResult> {
-  assertDemoAdminWritesAllowed();
+  await assertDemoAdminWritesAllowed();
   const parsed = createClimateActionMutationSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -110,7 +110,7 @@ export async function saveNewClimateAction(input: unknown): Promise<MutationResu
 }
 
 export async function commitClimateActionChanges(input: unknown): Promise<MutationResult> {
-  assertDemoAdminWritesAllowed();
+  await assertDemoAdminWritesAllowed();
   const parsed = updateClimateActionMutationSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -145,7 +145,7 @@ export async function commitClimateActionChanges(input: unknown): Promise<Mutati
 }
 
 export async function removeClimateAction(input: unknown): Promise<MutationResult> {
-  assertDemoAdminWritesAllowed();
+  await assertDemoAdminWritesAllowed();
   const parsed = deleteClimateActionMutationSchema.safeParse(input);
   if (!parsed.success) {
     return {
