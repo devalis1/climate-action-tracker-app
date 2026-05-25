@@ -167,3 +167,58 @@ Definition of done:
 - [x] Multiple city management (**admin UX**): `/admin` selector + `admin_city_id` + `listCitiesSummary` (bounded query).
 - [ ] Admin authentication — **production**: OAuth/JWT with **JWKS signature verification** in-repo (or trusted upstream session). **Demo slice shipped:** `ADMIN_DEMO_SECRET` + `/admin/login` cookie + Bearer parity; **`peekUnverifiedJwtClaims`** remains non-auth.
 
+## v2.0 experimental (branch `v2.0` — do not merge to `main`)
+
+Status: Phase A–C shipped on branch — Phase D (ESLint/CI/E2E/stretch) pending.
+
+Phase v2-audit (investigation):
+
+- Started: Monday, May 25, 2026
+- Completed: Monday, May 25, 2026
+- Elapsed: single session (audit + scope doc only)
+
+- [x] Create `v2.0` branch from `main`.
+- [x] Full codebase audit (`npm test`, `npm run build`, checklist walk).
+- [x] Publish prioritized backlog in **`docs/V2_SCOPE.md`**.
+
+Phase A (shared UI + feedback):
+
+- [x] Design-system `Button`, `Input`, `Dialog`, `Toast` primitives.
+- [x] Toast notifications for admin mutations + login.
+- [x] Branded `ConfirmDialog` replacing `window.confirm`.
+- [x] Header active route indication.
+- [x] Extract shared system-state panels.
+
+Phase B (admin workflow):
+
+- [x] Decompose `admin-workspace.tsx` into `src/components/admin/*`.
+- [x] Edit-in-modal + import review modal.
+- [x] Paginated/sorted admin table (25/page, filters).
+- [x] Gate `POST /api/import-action` when `ADMIN_DEMO_SECRET` set.
+
+Phase C (public viewer):
+
+- [x] Wire `ActionTable` into `PublicCityDashboard` with pagination.
+
+Phase D (planned — infrastructure / stretch):
+
+- [ ] ESLint + Prettier + `npm run lint`.
+- [ ] GitHub Actions CI on `v2.0`.
+- [ ] Component / Playwright admin smoke tests.
+- [ ] JWT/OAuth, optimistic updates, import streaming (stretch).
+
+### v2.0 — OEF ecosystem (experimental investigation)
+
+Status: Complete — **`docs/V2_OEF_ECOSYSTEM.md`** + **`docs/V2_OEF_PORTS.md`**; awaiting operator **Go** before further OEF ports.
+
+- [x] Survey CityCatalyst, OpenClimate, cc-poc-template, OpenClimate-Schema (remote).
+- [x] Publish feature adoption matrix + prioritized OEF-inspired recommendations.
+- [x] Publish actionable port plan with source paths, effort, and build order (`docs/V2_OEF_PORTS.md`).
+- [ ] Admin edit **modal** + public read **drawer** (CityCatalyst pattern — not scroll-to-composer).
+- [ ] Import staged review modal + AI disclaimer (GHGI wizard pattern, not full file pipeline).
+- [ ] Public action list + optional `BarVisualization` (Tier A).
+- [x] OpenClimate read-only enrichment proxy (`/api/openclimate/*`, live panels on public viewer).
+- [ ] Admin edit **modal** + public read **drawer** (CityCatalyst pattern — not scroll-to-composer).
+- [ ] Playwright admin smoke (CityCatalyst E2E pattern).
+- [ ] Defer: full GHGI wizard, HIAP live API, nested-accounts-map, OAuth (document only).
+

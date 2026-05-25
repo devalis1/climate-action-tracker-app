@@ -1,6 +1,6 @@
 import type { ClimateAction } from "@/lib/schemas";
 
-export function totalAnnualReduction(actions: ClimateAction[]): number {
+export function totalAnnualReduction(actions: readonly ClimateAction[]): number {
   return actions.reduce((total, action) => total + action.annualReduction, 0);
 }
 

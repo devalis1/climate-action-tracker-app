@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { isDemoAdminAuthenticated } from "@/server/admin-auth";
 import { importClimateActionFromText } from "@/server/llm";
 
 const bodySchema = z.object({
@@ -15,6 +16,15 @@ const bodySchema = z.object({
  * Server-only: uses Ollama (and optional Gemini fallback); never exposes secrets.
  */
 export async function POST(req: Request) {
+  if (process.env.ADMIN_DEMO_SECRET?.trim()) {
+    if (!(await isDemoAdminAuthenticated())) {
+      return NextResponse.json(
+        { ok: false as const, errors: ["Admin authentication required."] },
+        { status: 401 },
+      );
+    }
+  }
+
   let json: unknown;
   try {
     json = await req.json();

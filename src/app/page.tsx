@@ -1,136 +1,51 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { PublicCityDashboard } from "@/components/public-city-dashboard";
-import { DEMO_GREENVILLE_CITY_NAME } from "@/lib/demo-city";
-import { cityAndClimateRowsToCityProfile } from "@/lib/profile-map";
+import {
+  DatabaseConfigRequired,
+  DatabaseConnectionFailed,
+  SeedDataMissing,
+} from "@/components/system-states";
+import {
+  publicCityPath,
+  resolveDefaultPublicCitySlug,
+} from "@/lib/public-default-city";
 import {
   DbConfigurationError,
   DbQueryError,
-  getCityByName,
-  listClimateActionsForCityOffset,
+  listCitiesSummary,
 } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
+/** Public entry always routes into the multi-city slug dashboard. */
 export default async function PublicViewerPage() {
   try {
-    const city = await getCityByName(DEMO_GREENVILLE_CITY_NAME);
-    if (!city) {
-      return <ViewerMissingSeedState />;
+    const cities = await listCitiesSummary();
+    const slug = resolveDefaultPublicCitySlug(cities);
+
+    if (!slug) {
+      return (
+        <SeedDataMissing
+          detail={
+            <p>
+              Run <code className="font-mono text-[0.7rem]">npm run db:migrate</code> and
+              refresh.
+            </p>
+          }
+          title="No cities found in the database"
+        />
+      );
     }
 
-    const actionRows = await listClimateActionsForCityOffset({
-      cityId: city.id,
-      limit: 500,
-      sort: "startYear",
-      direction: "desc",
-    });
-
-    const profile = cityAndClimateRowsToCityProfile(
-      {
-        name: city.name,
-        baselineEmissionsTonsPerYear: city.baselineEmissionsTonsPerYear,
-        targetYear: city.targetYear,
-      },
-      actionRows.map((row) => ({
-        title: row.title,
-        sector: row.sector,
-        annualReductionTonsPerYear: row.annualReductionTonsPerYear,
-        status: row.status,
-        startYear: row.startYear,
-      })),
-    );
-
-    return (
-      <PublicCityDashboard
-        introBody={
-          <>
-            Postgres-backed totals for the Greenville demo footprint: inventoried programs,
-            summed modeled reductions, sector exposure, and a transparent on-track glide path
-            versus the baseline.             Multi-city read slice:{" "}
-            <Link
-              href={`/city/${encodeURIComponent(city.slug)}`}
-              className="font-mono text-brand-accent underline-offset-4 hover:underline"
-            >
-              /city/{city.slug}
-            </Link>
-            .
-          </>
-        }
-        profile={profile}
-      />
-    );
+    redirect(publicCityPath(slug));
   } catch (cause) {
     if (cause instanceof DbConfigurationError) {
-      return (
-        <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-          <DatabaseMissingMessage />
-        </div>
-      );
+      return <DatabaseConfigRequired />;
     }
     if (cause instanceof DbQueryError) {
-      return (
-        <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-          <DatabaseConnectMessage />
-        </div>
-      );
+      return <DatabaseConnectionFailed />;
     }
 
     throw cause;
   }
-}
-
-function ViewerMissingSeedState() {
-  return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
-          Seed missing
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
-          Greenville baseline data not found
-        </h1>
-        <p className="mt-4 text-sm leading-relaxed text-white/72">
-          Run{" "}
-          <code className="font-mono text-[0.7rem]">npm run db:migrate</code> and refresh.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function DatabaseMissingMessage() {
-  return (
-    <div className="rounded-[12px] border border-brand-accent/40 bg-brand-surface p-10 shadow-brand">
-      <p className="font-mono text-xs uppercase tracking-[0.22em] text-brand-accent">
-        Database unavailable
-      </p>
-      <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
-        Configure DATABASE_URL
-      </h1>
-      <p className="mt-4 text-sm leading-relaxed text-white/72">
-        The public viewer now reads Postgres. Copy{" "}
-        <code className="font-mono text-[0.7rem]">.env.example</code>{" "}
-        to <code className="font-mono text-[0.7rem]">.env.local</code>, start Docker Postgres,
-        and run migrations.
-      </p>
-    </div>
-  );
-}
-
-function DatabaseConnectMessage() {
-  return (
-    <div className="rounded-[12px] border border-[#ffb877]/55 bg-brand-surface p-10 shadow-brand">
-      <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ffb877]">
-        Connection failure
-      </p>
-      <h1 className="mt-4 font-heading text-3xl font-semibold text-white">
-        Cannot reach Postgres
-      </h1>
-      <p className="mt-4 text-sm leading-relaxed text-white/72">
-        Confirm Compose is healthy and <code className="font-mono text-[0.7rem]">DATABASE_URL</code>{" "}
-        matches your local port/user/database.
-      </p>
-    </div>
-  );
 }

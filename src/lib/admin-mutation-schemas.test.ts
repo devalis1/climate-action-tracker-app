@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createClimateActionMutationSchema,
+  createCityMutationSchema,
   deleteClimateActionMutationSchema,
   updateCityBaselineMutationSchema,
   updateClimateActionMutationSchema,
@@ -58,6 +59,30 @@ describe("admin mutation schemas — string coercion", () => {
     const r = updateCityBaselineMutationSchema.safeParse({
       baselineEmissionsTonsPerYear: "two-hundred",
       targetYear: 2035,
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("creates cities with coerced baseline and optional slug", () => {
+    const r = createCityMutationSchema.safeParse({
+      name: "Austin",
+      baselineEmissionsTonsPerYear: "520000",
+      targetYear: "2045",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.baselineEmissionsTonsPerYear).toBe(520000);
+      expect(r.data.targetYear).toBe(2045);
+      expect(r.data.slug).toBeUndefined();
+    }
+  });
+
+  it("rejects invalid city slugs", () => {
+    const r = createCityMutationSchema.safeParse({
+      name: "Austin",
+      slug: "austin_tx",
+      baselineEmissionsTonsPerYear: 520000,
+      targetYear: 2045,
     });
     expect(r.success).toBe(false);
   });

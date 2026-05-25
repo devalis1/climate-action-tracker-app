@@ -38,6 +38,7 @@ export interface CityRecord {
   slug: string;
   baselineEmissionsTonsPerYear: number;
   targetYear: number;
+  openclimateActorId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,6 +91,7 @@ function mapCity(row: {
   slug: string;
   baseline_emissions_tons_per_year: string | number;
   target_year: number;
+  openclimate_actor_id?: string | null;
   created_at: Date;
   updated_at: Date;
 }): CityRecord {
@@ -99,6 +101,7 @@ function mapCity(row: {
     slug: row.slug,
     baselineEmissionsTonsPerYear: Number(row.baseline_emissions_tons_per_year),
     targetYear: row.target_year,
+    openclimateActorId: row.openclimate_actor_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -145,7 +148,8 @@ async function withClient<T>(
 export async function getCityById(id: number): Promise<CityRecord | null> {
   return withClient(async (client) => {
     const result = await client.query(
-      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year,
+              openclimate_actor_id, created_at, updated_at
        FROM cities WHERE id = $1`,
       [id],
     );
@@ -157,7 +161,8 @@ export async function getCityById(id: number): Promise<CityRecord | null> {
 export async function getCityByName(name: string): Promise<CityRecord | null> {
   return withClient(async (client) => {
     const result = await client.query(
-      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year,
+              openclimate_actor_id, created_at, updated_at
        FROM cities WHERE name = $1`,
       [name],
     );
@@ -172,7 +177,8 @@ export async function getCityBySlug(slug: string): Promise<CityRecord | null> {
 
   return withClient(async (client) => {
     const result = await client.query(
-      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year, created_at, updated_at
+      `SELECT id, name, slug, baseline_emissions_tons_per_year, target_year,
+              openclimate_actor_id, created_at, updated_at
        FROM cities WHERE slug = $1`,
       [normalized],
     );
@@ -208,6 +214,57 @@ export interface ListClimateActionsOffsetParams {
   offset?: number;
   sort?: ClimateActionSortKey;
   direction?: SortDirection;
+  sector?: Sector;
+  status?: Status;
+}
+
+export interface ClimateActionListFilters {
+  sector?: Sector;
+  status?: Status;
+}
+
+function buildClimateActionFilterSql(
+  filters: ClimateActionListFilters | undefined,
+  startIndex: number,
+): { clause: string; params: unknown[] } {
+  const parts: string[] = [];
+  const params: unknown[] = [];
+  let index = startIndex;
+
+  if (filters?.sector) {
+    parts.push(`sector = $${index}`);
+    params.push(filters.sector);
+    index += 1;
+  }
+
+  if (filters?.status) {
+    parts.push(`status = $${index}`);
+    params.push(filters.status);
+    index += 1;
+  }
+
+  return {
+    clause: parts.length > 0 ? ` AND ${parts.join(" AND ")}` : "",
+    params,
+  };
+}
+
+/** Count climate actions for admin/public pagination UI. */
+export async function countClimateActionsForCity(
+  cityId: number,
+  filters?: ClimateActionListFilters,
+): Promise<number> {
+  const { clause, params } = buildClimateActionFilterSql(filters, 2);
+
+  return withClient(async (client) => {
+    const result = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM climate_actions
+       WHERE city_id = $1${clause}`,
+      [cityId, ...params],
+    );
+    return Number(result.rows[0]?.count ?? 0);
+  });
 }
 
 /** Offset pagination — OK for shallow pages; prefer keyset at very large offsets. */
@@ -220,16 +277,20 @@ export async function listClimateActionsForCityOffset(
   const limit = Math.min(Math.max(1, params.limit), 500);
 
   const orderBy = climateActionsOrderBySql(sort, direction);
+  const { clause, params: filterParams } = buildClimateActionFilterSql(
+    { sector: params.sector, status: params.status },
+    2,
+  );
 
   return withClient(async (client) => {
     const result = await client.query(
       `SELECT id, city_id, title, sector, annual_reduction_tons_per_year, status, start_year,
               created_at, updated_at
        FROM climate_actions
-       WHERE city_id = $1
+       WHERE city_id = $1${clause}
        ORDER BY ${orderBy}
-       LIMIT $2 OFFSET $3`,
-      [params.cityId, limit, offset],
+       LIMIT $${2 + filterParams.length} OFFSET $${3 + filterParams.length}`,
+      [params.cityId, ...filterParams, limit, offset],
     );
     return result.rows.map(mapClimateAction);
   });
@@ -292,6 +353,37 @@ export async function listClimateActionsForCityKeyset(
   });
 }
 
+/** Insert a new city row (admin-created; not migration-seeded). */
+export async function insertCity(input: {
+  name: string;
+  slug: string;
+  baselineEmissionsTonsPerYear: number;
+  targetYear: number;
+  openclimateActorId?: string | null;
+}): Promise<CityRecord> {
+  const name = input.name.trim();
+  const slug = input.slug.trim().toLowerCase();
+  const baseline = BigInt(Math.floor(input.baselineEmissionsTonsPerYear));
+  const targetYear = Math.floor(input.targetYear);
+  const openclimateActorId =
+    input.openclimateActorId === null || input.openclimateActorId === undefined
+      ? null
+      : input.openclimateActorId.trim() || null;
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `INSERT INTO cities (
+         name, slug, baseline_emissions_tons_per_year, target_year, openclimate_actor_id
+       )
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, slug, baseline_emissions_tons_per_year, target_year,
+                 openclimate_actor_id, created_at, updated_at`,
+      [name, slug, baseline, targetYear, openclimateActorId],
+    );
+    return mapCity(result.rows[0]);
+  });
+}
+
 /** Update baseline inventory (tons/year) and net-zero target year for `cities.id`. */
 export async function updateCityBaselineAndTarget(
   cityId: number,
@@ -311,8 +403,31 @@ export async function updateCityBaselineAndTarget(
            updated_at = NOW()
        WHERE id = $1
        RETURNING id, name, slug, baseline_emissions_tons_per_year, target_year,
-                 created_at, updated_at`,
+                 openclimate_actor_id, created_at, updated_at`,
       [cityId, baseline, targetYear],
+    );
+    const row = result.rows[0];
+    return row ? mapCity(row) : null;
+  });
+}
+
+/** Link a city row to an OpenClimate actor_id (UNLOCODE-style). Pass null to clear. */
+export async function updateCityOpenClimateActorId(
+  cityId: number,
+  openclimateActorId: string | null,
+): Promise<CityRecord | null> {
+  const normalized =
+    openclimateActorId === null ? null : openclimateActorId.trim() || null;
+
+  return withClient(async (client) => {
+    const result = await client.query(
+      `UPDATE cities
+       SET openclimate_actor_id = $2,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, name, slug, baseline_emissions_tons_per_year, target_year,
+                 openclimate_actor_id, created_at, updated_at`,
+      [cityId, normalized],
     );
     const row = result.rows[0];
     return row ? mapCity(row) : null;

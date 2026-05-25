@@ -13,7 +13,10 @@ import {
   deleteClimateActionMutationSchema,
   updateCityBaselineMutationSchema,
   updateClimateActionMutationSchema,
+  updateOpenClimateActorMutationSchema,
+  createCityMutationSchema,
 } from "@/lib/admin-mutation-schemas";
+import { deriveCitySlugFromName } from "@/lib/city-slug";
 import { PUBLIC_VIEWER_SLUGS } from "@/lib/public-viewer-slugs";
 import { assertDemoAdminWritesAllowed } from "@/server/admin-auth";
 import { resolveAdminContextCityId } from "@/server/admin-city-resolve";
@@ -21,14 +24,22 @@ import {
   DbConfigurationError,
   deleteClimateAction,
   getCityById,
+  getCityByName,
+  getCityBySlug,
+  insertCity,
   insertClimateAction,
   listCitiesSummary,
   updateCityBaselineAndTarget,
+  updateCityOpenClimateActorId,
   updateClimateAction,
 } from "@/server/db";
 
 export type MutationResult =
   | { ok: true }
+  | { ok: false; message: string };
+
+export type CreateCityResult =
+  | { ok: true; cityId: number; slug: string; name: string }
   | { ok: false; message: string };
 
 function adminCityCookieOptions() {
@@ -103,6 +114,56 @@ export async function selectAdminCity(input: unknown): Promise<MutationResult> {
   }
 }
 
+export async function createAdminCity(input: unknown): Promise<CreateCityResult> {
+  await assertDemoAdminWritesAllowed();
+  const parsed = createCityMutationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues.map((issue) => issue.message).join(" "),
+    };
+  }
+
+  const slug = parsed.data.slug ?? deriveCitySlugFromName(parsed.data.name);
+  if (!slug) {
+    return { ok: false, message: "Could not derive a public slug from the city name." };
+  }
+
+  try {
+    const existingByName = await getCityByName(parsed.data.name);
+    if (existingByName) {
+      return { ok: false, message: `A city named "${parsed.data.name}" already exists.` };
+    }
+
+    const existingBySlug = await getCityBySlug(slug);
+    if (existingBySlug) {
+      return {
+        ok: false,
+        message: `Public slug "${slug}" is already used by ${existingBySlug.name}.`,
+      };
+    }
+
+    const city = await insertCity({
+      name: parsed.data.name,
+      slug,
+      baselineEmissionsTonsPerYear: parsed.data.baselineEmissionsTonsPerYear,
+      targetYear: parsed.data.targetYear,
+      openclimateActorId: parsed.data.openclimateActorId,
+    });
+
+    const cookieStore = await cookies();
+    cookieStore.set(ADMIN_CITY_ID_COOKIE, String(city.id), adminCityCookieOptions());
+    await revalidatePublicViewerSurfacesAfterMutation();
+
+    return { ok: true, cityId: city.id, slug: city.slug, name: city.name };
+  } catch (reason) {
+    return {
+      ok: false,
+      message: publicMessageFromUnknown(reason, "Could not create city."),
+    };
+  }
+}
+
 export async function saveCityBaselineAndTarget(input: unknown): Promise<MutationResult> {
   await assertDemoAdminWritesAllowed();
   const parsed = updateCityBaselineMutationSchema.safeParse(input);
@@ -127,6 +188,34 @@ export async function saveCityBaselineAndTarget(input: unknown): Promise<Mutatio
     return {
       ok: false,
       message: publicMessageFromUnknown(reason, "Could not update city profile."),
+    };
+  }
+}
+
+export async function saveCityOpenClimateActor(input: unknown): Promise<MutationResult> {
+  await assertDemoAdminWritesAllowed();
+  const parsed = updateOpenClimateActorMutationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues.map((i) => i.message).join(" "),
+    };
+  }
+
+  try {
+    const cityId = await resolveAdminContextCityId();
+    const updated = await updateCityOpenClimateActorId(
+      cityId,
+      parsed.data.openclimateActorId,
+    );
+    if (!updated) return { ok: false, message: "City OpenClimate link was not saved." };
+
+    await revalidatePublicViewerSurfacesAfterMutation();
+    return { ok: true };
+  } catch (reason) {
+    return {
+      ok: false,
+      message: publicMessageFromUnknown(reason, "Could not update OpenClimate link."),
     };
   }
 }

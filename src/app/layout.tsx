@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
+import { ToastProvider } from "@/components/ui/toast-provider";
 import "./globals.css";
 
 // Archia is not freely hosted on Google Fonts; Space Grotesk is the closest geometric substitute for headings.
@@ -24,7 +25,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "City Climate Action Tracker",
-  description: "Open Earth-style climate action tracker for Greenville."
+  description: "Open Earth-style climate action tracker for city climate programs.",
 };
 
 export default function RootLayout({
@@ -43,10 +44,12 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <SiteHeader />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
+        <ToastProvider>
+          <SiteHeader />
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -1,12 +1,18 @@
 import type { ReactNode } from "react";
 
+import { ActionTable } from "@/components/action-table";
 import {
   DashboardSummary,
   TrackStatusPanel,
 } from "@/components/dashboard-summary";
 import { EmissionsTrajectoryChart } from "@/components/emissions-trajectory-chart";
+import { OpenClimateAttribution } from "@/components/openclimate/openclimate-attribution";
+import { OpenClimateContextPanel } from "@/components/openclimate/openclimate-context-panel";
+import { TargetGapPanel } from "@/components/openclimate/target-gap-panel";
 import { SectorBreakdown } from "@/components/sector-breakdown";
+import type { OpenClimateCoverageStats } from "@/lib/openclimate-types";
 import type { CityProfile } from "@/lib/schemas";
+import type { OpenClimateDashboardContext } from "@/server/openclimate";
 
 const shellX = "px-5 sm:px-8 lg:px-10";
 
@@ -16,12 +22,16 @@ type Props = {
   eyebrow?: string;
   /** Paragraph under the hero title (demo vs multi-city wording). */
   introBody: ReactNode;
+  openClimate?: OpenClimateDashboardContext | null;
+  coverageStats?: OpenClimateCoverageStats | null;
 };
 
 export function PublicCityDashboard({
   profile,
   eyebrow = "Public viewer",
   introBody,
+  openClimate = null,
+  coverageStats = null,
 }: Props) {
   return (
     <>
@@ -48,6 +58,11 @@ export function PublicCityDashboard({
             <p className="mt-6 max-w-xl text-base leading-relaxed text-white/72 sm:text-lg">
               {introBody}
             </p>
+            {openClimate ? (
+              <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-brand-green-soft">
+                Live enrichment · OpenClimate · {openClimate.enrichment.actorId}
+              </p>
+            ) : null}
           </div>
 
           <div className="relative rounded-[10px] border border-white/15 bg-[linear-gradient(145deg,rgba(35,82,220,0.55)_0%,rgba(20,39,95,0.72)_55%,rgba(1,1,45,0.85)_100%)] p-7 shadow-brand backdrop-blur-md sm:p-8">
@@ -79,12 +94,35 @@ export function PublicCityDashboard({
                   {profile.targetYear}
                 </dd>
               </div>
+              {openClimate?.enrichment.population ? (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-brand-cyan-soft">
+                    Population (OC)
+                  </dt>
+                  <dd className="font-mono text-base tabular-nums text-white">
+                    {Intl.NumberFormat("en-US").format(
+                      openClimate.enrichment.population.population,
+                    )}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           </div>
         </div>
       </section>
 
       <section className={`mx-auto max-w-7xl py-12 sm:py-14 lg:py-16 ${shellX}`}>
+        {openClimate ? (
+          <div className="mb-10 space-y-8">
+            <OpenClimateContextPanel enrichment={openClimate.enrichment} />
+            <TargetGapPanel
+              baselineComparison={openClimate.baselineComparison}
+              planningTargetYear={profile.targetYear}
+              targetGap={openClimate.targetGap}
+            />
+          </div>
+        ) : null}
+
         <div className="mb-8 flex flex-col gap-3 border-b border-white/10 pb-8 sm:mb-10 sm:flex-row sm:items-end sm:justify-between sm:pb-10">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand-muted">
@@ -95,8 +133,8 @@ export function PublicCityDashboard({
             </h2>
           </div>
           <p className="max-w-md text-sm text-white/55">
-            Figures update live from PostgreSQL alongside the City Admin tooling;
-            monospace numerals keep scan-ready comparisons aligned with Sprint 4 scope.
+            Local actions and aggregates from PostgreSQL; OpenClimate panels above add official
+            targets and benchmark emissions when an actor is linked.
           </p>
         </div>
 
@@ -112,7 +150,14 @@ export function PublicCityDashboard({
             <TrackStatusPanel profile={profile} />
           </div>
         </div>
+
+        <ActionTable actions={profile.actions} />
       </section>
+
+      <OpenClimateAttribution
+        actorId={openClimate?.enrichment.actorId}
+        coverage={coverageStats}
+      />
     </>
   );
 }

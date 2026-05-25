@@ -4,12 +4,18 @@ vi.mock("@/server/llm", () => ({
   importClimateActionFromText: vi.fn(),
 }));
 
+vi.mock("@/server/admin-auth", () => ({
+  isDemoAdminAuthenticated: vi.fn(async () => true),
+}));
+
 import { POST } from "./route";
 import { importClimateActionFromText } from "@/server/llm";
+import { isDemoAdminAuthenticated } from "@/server/admin-auth";
 
 describe("POST /api/import-action", () => {
   beforeEach(() => {
     vi.mocked(importClimateActionFromText).mockReset();
+    vi.mocked(isDemoAdminAuthenticated).mockResolvedValue(true);
   });
 
   it("returns 400 when POST body is not valid JSON", async () => {
@@ -66,5 +72,21 @@ describe("POST /api/import-action", () => {
     );
 
     expect(res.status).toBe(422);
+  });
+
+  it("returns 401 when demo auth is required and missing", async () => {
+    vi.stubEnv("ADMIN_DEMO_SECRET", "test-secret");
+    vi.mocked(isDemoAdminAuthenticated).mockResolvedValue(false);
+
+    const res = await POST(
+      new Request("http://localhost/api/import-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "mock paragraph" }),
+      }),
+    );
+
+    expect(res.status).toBe(401);
+    vi.unstubAllEnvs();
   });
 });

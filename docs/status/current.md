@@ -1,5 +1,16 @@
 # Current Status
 
+## v2.0 experimental (May 25, 2026)
+
+- Branch **`v2.0`** from frozen **`main`** — **not for merge** into assessment deliverable.
+- **`docs/V2_SCOPE.md`** — audit + backlog; **Phase A–C shipped** (toasts, confirm dialog, admin modals/pagination, public action table, import auth gate).
+- **`docs/V2_OEF_ECOSYSTEM.md`** — OEF GitHub ecosystem investigation (separate pass).
+- **`docs/V2_OEF_PORTS.md`** — actionable code & feature port plan (OpenClimate Tier 1 implemented).
+- **OpenClimate live integration** — public viewer enriches from `openclimate.network` when `cities.openclimate_actor_id` is set; admin actor search/link; no CityCatalyst OAuth.
+- **Admin city create** — **New city** modal inserts into Postgres (name, slug, baseline, target, optional OpenClimate actor); switches admin context; `/city/[slug]` and header picker update without a migration.
+- Verified on branch: **`npm test`** (69), **`npm run build`** (pass). Phase D (ESLint/CI/E2E/stretch) pending.
+- **Public multi-city UX:** `/` redirects to `/city/[defaultSlug]`; header **Viewing city** selector lists all seeded cities (no inline slug link in hero copy).
+
 ## Real
 
 - **Phase 1–4** unchanged in scope: Greenville primary admin footprint, Postgres-backed **`/`** + **`/admin`**, CRUD + **review-before-save** import via `POST /api/import-action`, linear glide **on-track** heuristic (`src/lib/calculations.ts`).

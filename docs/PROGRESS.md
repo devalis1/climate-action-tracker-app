@@ -91,10 +91,32 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - **Phase 6 final verification (May 18, 2026):** **`npm test`** (**48** passed), **`npm run build`**, **`npm run db:check`** (**`ok: true`**); **MCP browser** pass on **`/`**, **`/city/greenville`**, **`/city/riverside`**, **`/city/unknown-city-slug`** (not-found), **`/admin`** gate, **`/admin/login`** (configured secret), multi-city selector (Greenville ↔ Riverside), **`GET /admin/logout`**; **`docs/assessment-notes.md`** PDF alignment table; **`<a href="/admin/logout">`** for reliable cookie clear. **Note:** Next.js **dev** hydration overlay text was observed on **`/city/riverside`** in automation; confirm with **`npm run start`** if needed.
 - **Trajectory chart (follow-up):** hard refresh **`/`** or **`/city/[slug]`** — confirm **no** tons glyph on the SVG; smaller footprint (`emissions-trajectory-chart.tsx`).
 
+## v2.0 experimental branch (May 25, 2026)
+
+- Created branch **`v2.0`** from frozen **`main`** (non-merge policy — assessment deliverable stays on `main`).
+- **`docs/V2_SCOPE.md`** — audit-backed backlog and phased plan.
+- **Phase A–C implemented (first v2 slice):**
+  - Design-system UI primitives: `src/components/ui/{button,input,label,dialog,confirm-dialog,toast-provider}.tsx`
+  - Global **`ToastProvider`** in `src/app/layout.tsx`; toasts on admin mutations, city switch, import parse/save, login
+  - Branded **`ConfirmDialog`** replaces `window.confirm` for delete
+  - **`SiteNavLinks`** active route states (`/` + `/city/*` → Public; `/admin/*` → Admin)
+  - Shared system-state panels: `src/components/system-states/`
+  - Admin decomposed: `src/components/admin/*` + slim `admin-workspace.tsx`
+  - **Edit-in-modal** + **import review modal** (`ActionFormModal`)
+  - Paginated admin table (25/page, sort headers, sector/status filters) via URL searchParams + `countClimateActionsForCity`
+  - **`POST /api/import-action`** returns **401** when `ADMIN_DEMO_SECRET` is set and admin cookie/Bearer missing
+  - Public **`ActionTable`** wired in `PublicCityDashboard` with client pagination (25/page)
+  - **Public multi-city default:** `/` redirects to `/city/[slug]`; header **Viewing city** selector (`PublicCityPicker`) — no hero slug link
+
+## Verified (v2 audit + implementation)
+
+- **`npm test`** — **52 passed** (includes `admin-list-params.test.ts`, import auth integration test).
+- **`npm run build`** — success (Next.js 16.2.6).
+
 ## Next
 
-- Operator: re-run **`npm run db:migrate`** on any environment that predates **`003_city_slugs_and_riverside_seed.sql`**, then **`db:check`**.
-- Submission zip / PR: optional **`docs/MANUAL_TEST_CHECKLIST.md`** pass including **`/city/riverside`** and **`/city/greenville`**.
+- **v2 Phase D (optional):** ESLint/Prettier, CI workflow, component/E2E tests, JWT/OAuth stretch — see **`docs/V2_SCOPE.md`**.
+- **main (unchanged):** operator may commit/push **`v2.0`** when satisfied; do not merge into **`main`** without explicit decision.
 
 ## Operator-Owned Actions
 
@@ -135,3 +157,88 @@ Scalability groundwork in place: indexing + partitioning commentary in **`migrat
 - Sprint 6 implementation started Monday, May 18, 2026, ~4:50 PM UTC-3.
 - Phase 6 / Sprint 6 completed Monday, May 18, 2026, ~5:23 PM UTC-3 (agent: PDF stretch — multi-city read, admin selector + demo login, Vitest, browser QA); verification: **`npm test`** + **`npm run build`** + **`npm run db:check`**.
 - Phase 6 elapsed from implementation start through agent hand-off: approximately 33 minutes.
+- v2.0 audit started Monday, May 25, 2026 (branch `v2.0` from `main`; scope doc only, no feature implementation).
+- v2.0 Phase A–C implementation completed Monday, May 25, 2026 (UI primitives, admin workflow, public action list, import auth gate).
+- v2.0 OEF ecosystem investigation completed Monday, May 25, 2026 (`docs/V2_OEF_ECOSYSTEM.md`; remote survey only, no feature implementation).
+- v2.0 OEF code & feature port plan completed Monday, May 25, 2026 (`docs/V2_OEF_PORTS.md`; investigation only, no feature implementation).
+- v2.0 OEF port plan reframed Monday, May 25, 2026 — **live integrations first** (OpenClimate API + CityCatalyst HIAP/OAuth), UI polish secondary.
+
+- v2.0 OpenClimate live integration completed Monday, May 25, 2026 — server proxy to `openclimate.network`, public enrichment + target gap panels, admin actor linker, migration `004_openclimate_actor_id.sql`.
+
+## v2.0 OpenClimate live integration (May 25, 2026)
+
+**What changed**
+
+- **`migrations/004_openclimate_actor_id.sql`** — `cities.openclimate_actor_id`; demo seeds Greenville → `US CHI`, Riverside → `US RAL`.
+- **`src/server/openclimate.ts`** — search, actor overview, emissions, coverage stats; `loadOpenClimateDashboardContext`.
+- **`src/lib/openclimate-normalize.ts`**, **`openclimate-comparison.ts`**, **`openclimate-types.ts`** — pure normalize + target gap / baseline cross-check.
+- **API routes:** `GET /api/openclimate/search`, `GET /api/openclimate/actor/[id]`.
+- **UI:** `OpenClimateContextPanel`, `TargetGapPanel`, `OpenClimateAttribution`, admin `OpenClimateActorPicker`.
+- **`PublicCityDashboard`** — live OpenClimate sections above local Postgres metrics; footer coverage stats.
+- **Admin:** `saveCityOpenClimateActor` server action; actor search + link in city profile section.
+- **Admin city create:** `createAdminCity` + **New city** modal — Postgres insert, auto slug, optional OpenClimate actor, switches admin context; public `/city/[slug]` live immediately.
+- **Tests:** `openclimate-comparison.test.ts`, `openclimate-normalize.test.ts`, `city-slug.test.ts` (69 total).
+
+**What was verified**
+
+- `npm test` 60/60 · `npm run build` success · `npm run db:migrate` applies 004.
+- Browser: `/` shows Chicago targets, CDP benchmark link, target gap, OpenClimate footer stats.
+- Browser: `/city/riverside` shows `US RAL` enrichment.
+- API: `/api/openclimate/search?name=Chicago` and `/api/openclimate/actor/US CHI` return live data.
+
+**What is next**
+
+- Operator review demo narrative (Greenville local data + Chicago OpenClimate actor for live target demo).
+- Optional: link other actors via admin without CityCatalyst OAuth.
+
+**Operator-owned actions**
+
+- Run `npm run db:migrate` if `openclimate_actor_id` column missing.
+- Set `OPENCLIMATE_ENRICHMENT=0` to disable live calls.
+
+## v2.0 OEF code & feature port plan (May 25, 2026)
+
+**What changed**
+
+- Added **`docs/V2_OEF_PORTS.md`**: ranked summary (top 10), repos surveyed, port candidates table (20 rows), detailed specs for top 8 candidates, quick wins, phase-2 integrations, not-worth-porting list, AGPL notes, build order, operator open questions.
+- Consolidates actionable port guidance from CityCatalyst, OpenClimate, cc-poc-template, OpenClimate-Schema, and CAP-Plan-Creator surveys; notes v2.0 items already shipped (toasts, modals, public `ActionTable`).
+
+**What was verified**
+
+- Mandatory repos via `gh` + raw GitHub reads: CC `ActionDrawer`, `ClimateActionCard`, `BarVisualization`, GHGI import steps, modals, HIAP, E2E; OpenClimate `API.md` + search/actor routes; cc-poc OAuth guide + HIAP modal.
+- Live OpenClimate: `search/actor?name=Chicago` → `US CHI`; `actor/US CHI` → targets + emissions datasources.
+- **`npm test`**: 52/52 pass · **`npm run build`**: success on `v2.0`.
+
+**What is next**
+
+- Operator **Go** on port plan build order (C1 quick wins → C2 public drawer → C3 OpenClimate enrichment → C4 HIAP mock → D Playwright/OAuth).
+- Resolve open questions: AGPL policy, demo actor IDs vs mock enrichment, drawer vs card grid preference.
+
+**Operator-owned actions**
+
+- Review **`docs/V2_OEF_PORTS.md`** and approve implementation priority before coding.
+
+## v2.0 OEF ecosystem investigation (May 25, 2026)
+
+**What changed**
+
+- Added **`docs/V2_OEF_ECOSYSTEM.md`**: executive summary, repo survey table, feature adoption matrix (Tier A/B/C), top 10 prioritized recommendations, integration sketches, out-of-scope list, cross-reference with **`docs/V2_SCOPE.md`**, operator open questions.
+- Updated **`docs/TODO.md`** with v2.0 OEF ecosystem backlog bullets (experimental, no merge to `main`).
+- Updated **`docs/status/current.md`** to reflect both v2 scope docs.
+
+**What was verified**
+
+- Remote read of CityCatalyst (`ActionDrawer`, `ClimateActionCard`, import steps, modals, toaster, E2E), cc-poc-template (README, module registry, OAuth guide), OpenClimate (API.md, NotificationProvider), OpenClimate-Schema (README, tables).
+- Live OpenClimate API: `name=Chicago` → actor `US CHI` with population/targets/emissions; generic Greenville/Riverside `q=` searches unreliable on production API.
+- **`npm test`**: 48/48 pass on `v2.0`. **`npm run build`**: failed at investigation time due to parallel `admin-workspace.tsx` type export (not fixed in this pass).
+
+**What is next**
+
+- Operator **Go** on merged roadmap from **`docs/V2_SCOPE.md`** + **`docs/V2_OEF_ECOSYSTEM.md`**.
+- Phase A: toasts + confirm dialog (aligns OEF + internal P0).
+- Phase B: admin edit modal (OEF clarifies modal=edit, drawer=read-only detail) + import review modal.
+- Phase C: public action list + optional OpenClimate enrichment proxy.
+
+**Operator-owned actions**
+
+- Decide AGPL reference-only policy, OpenClimate demo city actor IDs vs mock enrichment, modal vs drawer final UX, OAuth/HIAP deferral.
